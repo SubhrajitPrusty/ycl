@@ -24,16 +24,15 @@ if len(sys.argv) > 1:
 
 	items = r.json().get('items')
 
+	results = []
+	
 	if items:
-		results = [
-			{
-				"url": "https://youtube.com/watch?v=" + x["id"]["videoId"],
-				"title" : x["snippet"]["title"],
-			} 
-
-			for x in items
-			
-			]
+		for x in items:
+			videoId = x.get("id")
+			if videoId.get("kind") == "youtube#video":
+				results.append({ "url": "https://youtube.com/watch?v=" + videoId.get("videoId"), 
+							"title" : x["snippet"]["title"], 
+						})
 
 		options = [x["title"] for x in results]
 		title = f"Search results for {q}"
