@@ -2,14 +2,13 @@ from dotenv import load_dotenv
 import os
 import requests
 import sys
+import youtube_dl
 from pick import pick
 
 load_dotenv()
 
 KEY=os.environ.get("KEY")
 BASE_URL="https://www.googleapis.com/youtube/v3"
-
-
 
 PAYLOAD = {
 	"part": "snippet",
@@ -25,7 +24,7 @@ if len(sys.argv) > 1:
 	items = r.json().get('items')
 
 	results = []
-	
+
 	if items:
 		for x in items:
 			videoId = x.get("id")
@@ -39,6 +38,10 @@ if len(sys.argv) > 1:
 
 		option, index = pick(options, title)
 
-		cmd = f"youtube-dl {results[index]['url']}"
-		print(cmd)
-		os.system(cmd)
+		url = f"{results[index]['url']}"
+		print(url)
+
+		YDL_OPTS = {}
+		
+		with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
+			ydl.download([url])
