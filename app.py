@@ -16,6 +16,21 @@ PAYLOAD = {
 	"key" : KEY
 }
 
+class MyLogger(object):
+    def debug(self, msg):
+        pass
+
+    def warning(self, msg):
+        pass
+
+    def error(self, msg):
+        print(msg)
+
+
+def my_hook(d):
+    if d['status'] == 'finished':
+        print('Done downloading, now converting ...')
+
 if len(sys.argv) > 1:
 	q = " ".join(sys.argv[1:])
 	PAYLOAD["q"] = q
@@ -46,7 +61,12 @@ if len(sys.argv) > 1:
 		option, index = pick(options, title)
 
 		if option == "Download":
-			YDL_OPTS = {}
+			YDL_OPTS = {
+			'format' : 'bestvideo+bestaudio/best',
+			'logger' : MyLogger(),
+			'progress_hooks' : [my_hook],
+
+			}
 			
 			with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
 				ydl.download([url])
