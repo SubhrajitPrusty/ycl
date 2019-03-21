@@ -41,7 +41,16 @@ if len(sys.argv) > 1:
 		url = f"{results[index]['url']}"
 		print(url)
 
-		YDL_OPTS = {}
-		
-		with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
-			ydl.download([url])
+		options = ["Play", "Download"]
+		title = "Choose what you want to do"
+		option, index = pick(options, title)
+
+		if option == "Download":
+			YDL_OPTS = {}
+			
+			with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
+				ydl.download([url])
+
+		elif option == "Play":
+			print("Not implemented yet :(")
+			sys.exit()
