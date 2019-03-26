@@ -1,9 +1,10 @@
-from dotenv import load_dotenv
 import os
-import requests
 import sys
+import click
+import requests
 import youtube_dl
 from pick import pick
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -31,8 +32,13 @@ def my_hook(d):
     if d['status'] == 'finished':
         print('Done downloading, now converting ...')
 
-if len(sys.argv) > 1:
-	q = " ".join(sys.argv[1:])
+
+@click.command()
+@click.argument("query", nargs=-1)
+
+def cli(query):
+
+	q = " ".join(query)
 	PAYLOAD["q"] = q
 	r = requests.get(BASE_URL+"/search", params=PAYLOAD)
 
@@ -74,3 +80,7 @@ if len(sys.argv) > 1:
 		elif option == "Play":
 			print("Not implemented yet :(")
 			sys.exit()
+
+
+if __name__ == '__main__':
+	cli()

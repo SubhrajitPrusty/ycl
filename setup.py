@@ -39,9 +39,9 @@ setup(name = 'ycl',
 
     license = 'MIT',
     packages=find_packages(), 
-    install_requires=['python-dotenv', 'requests', 'youtube-dl', 'pick', 'windows-curses'],
+    install_requires=['python-dotenv', 'requests', 'youtube-dl', 'pick', 'windows-curses', 'Click'],
     entry_points="""
     [console_scripts]
-        wallgen=wallgen:cli
+        ycl=ycl:cli
         """,
 )
