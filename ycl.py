@@ -71,6 +71,7 @@ def cli(query):
 			'format' : 'bestvideo+bestaudio/best',
 			'logger' : MyLogger(),
 			'progress_hooks' : [my_hook],
+			'outtmpl' : r"%(title)s.%(ext)s"
 
 			}
 			
