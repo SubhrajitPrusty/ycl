@@ -1,3 +1,0 @@
-pick
-python-dotenv
-youtube-dl
