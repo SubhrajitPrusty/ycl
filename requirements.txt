@@ -1,4 +1,3 @@
 pick
-windows-curses
 python-dotenv
 youtube-dl
