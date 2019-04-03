@@ -155,9 +155,19 @@ def play_audio(url):
 		threading.Thread(target=loop.run).start()
 
 		# Let user stop player gracefully
-		input('Press enter to stop playing...')
+		control = " "
+		playing = True
+		while control.lower() != "s":
+			control = input("Press s to stop playing, p to toggle pause : ")
 
-		# Stop loop
+			if control.lower() == "p":
+				if playing:
+					player.set_state(Gst.State.PAUSED)
+					playing = False
+				else:
+					player.set_state(Gst.State.PLAYING)
+					playing = True
+
 		player.set_state(Gst.State.NULL)
 		loop.quit()
 
