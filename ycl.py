@@ -10,7 +10,7 @@ import threading
 
 gi.require_version('Gst', '1.0')
 gi.require_version('GstBase', '1.0')
-gi.require_version('Gtk', '3.0')
+# gi.require_version('Gtk', '3.0')
 
 from gi.repository import GObject, Gst
 
@@ -98,6 +98,8 @@ def cli(query):
 
 		elif option == "Play":
 			play_audio(url)
+	else:
+		print("Couldn't connect. Check your credentials.")
 
 def play_audio(url):
 	
