@@ -3,24 +3,21 @@ import sys
 import click
 import requests
 import youtube_dl
-from pick import pick
+from pick import Picker
 from dotenv import load_dotenv
-import gi
 import threading
 
-gi.require_version('Gst', '1.0')
-gi.require_version('GstBase', '1.0')
-# gi.require_version('Gtk', '3.0')
+PLAY_SUPPORT=True
 
-from gi.repository import GObject, Gst
-
-GObject.threads_init()
-
-Gst.init(None)
-
-def on_tag(bus, msg):
-	taglist = msg.parse_tag()
-	# print('%s: %s' % (taglist.nth_tag_name(0), taglist.get_string(taglist.nth_tag_name(0)).value))
+try:
+	import gi
+	gi.require_version('Gst', '1.0')
+	gi.require_version('GstBase', '1.0')
+	from gi.repository import GObject, Gst
+	GObject.threads_init()
+	Gst.init(None)
+except Exception as e:
+	PLAY_SUPPORT=False
 
 load_dotenv()
 
@@ -49,13 +46,6 @@ def my_hook(d):
 		print('Done downloading, now converting ...')
 
 def search(query):
-	pass
-
-@click.command()
-@click.argument("query", nargs=-1)
-
-def cli(query):
-
 	q = " ".join(query)
 	PAYLOAD["q"] = q
 	r = requests.get(BASE_URL+"/search", params=PAYLOAD)
@@ -71,35 +61,56 @@ def cli(query):
 				results.append({ "url": "https://youtube.com/watch?v=" + videoId.get("videoId"), 
 							"title" : x["snippet"]["title"], 
 						})
-
-		options = [x["title"] for x in results]
-		title = f"Search results for {q}"
-
-		option, index = pick(options, title)
-
-		url = f"{results[index]['url']}"
-		print(url)
-
-		options = ["Play", "Download"]
-		title = "Choose what you want to do"
-		option, index = pick(options, title)
-
-		if option == "Download":
-			YDL_OPTS = {
-			'format' : 'bestvideo+bestaudio/best',
-			'logger' : MyLogger(),
-			'progress_hooks' : [my_hook],
-			'outtmpl' : r"%(title)s.%(ext)s"
-
-			}
-			
-			with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
-				ydl.download([url])
-
-		elif option == "Play":
-			play_audio(url)
 	else:
 		print("Couldn't connect. Check your credentials.")
+		sys.exit(1)
+
+	return results
+
+def quit_pick(picker):
+	sys.exit(0)
+
+@click.command()
+@click.argument("query", nargs=-1)
+
+def cli(query):
+	results = search(query)
+
+	options = [x["title"] for x in results]
+	title = f"Search results for {query} (q to quit)"
+
+	picker = Picker(options, title)
+	picker.register_custom_handler(ord('q'), quit_pick)
+	option, index = picker.start()
+
+	url = f"{results[index]['url']}"
+	print(f"Selected : {url}")
+
+	options = ["Play", "Download"]
+	title = "Choose what you want to do (q to quit)"
+	picker = Picker(options, title)
+
+	picker.register_custom_handler(ord('q'), quit_pick)
+
+	option, index = picker.start()
+
+	if option == "Download":
+		YDL_OPTS = {
+		'format' : 'bestvideo+bestaudio/best',
+		'logger' : MyLogger(),
+		'progress_hooks' : [my_hook],
+		'outtmpl' : r"%(title)s.%(ext)s"
+
+		}
+		
+		with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
+			ydl.download([url])
+
+	elif option == "Play":
+		if PLAY_SUPPORT:
+			play_audio(url)
+		else:
+			print("Play support is not available for your system.")
 
 def play_audio(url):
 	
@@ -149,7 +160,7 @@ def play_audio(url):
 		bus = player.get_bus()
 		bus.enable_sync_message_emission()
 		bus.add_signal_watch()
-		bus.connect('message::tag', on_tag)
+		# bus.connect('message::tag', on_tag)
 
 		loop = GObject.MainLoop()
 		threading.Thread(target=loop.run).start()
