@@ -40,7 +40,7 @@ setup(name = 'ycl',
 
     license = 'MIT',
     packages=find_packages(), 
-    install_requires=['python-dotenv', 'requests', 'youtube-dl', 'pick', 'Click'] + ['windows-curses'] if "win" in sys.platform else [],
+    install_requires=['python-dotenv', 'requests', 'youtube-dl', 'pick', 'Click', 'windows-curses; platform_system == "Windows"'],
     entry_points="""
     [console_scripts]
         ycl=ycl:cli
