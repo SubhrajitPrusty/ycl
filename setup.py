@@ -1,6 +1,7 @@
 from setuptools import setup, find_packages
 from codecs import open
 from os import path
+import sys
 
 here = path.abspath(path.dirname(__file__))
 
@@ -39,7 +40,7 @@ setup(name = 'ycl',
 
     license = 'MIT',
     packages=find_packages(), 
-    install_requires=['python-dotenv', 'requests', 'youtube-dl', 'pick', 'Click'],
+    install_requires=['python-dotenv', 'requests', 'youtube-dl', 'pick', 'Click'] + ['windows-curses'] if "win" in sys.platform else [],
     entry_points="""
     [console_scripts]
         ycl=ycl:cli
