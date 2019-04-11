@@ -19,7 +19,7 @@ sudo apt install gstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins
 
 ```bash
 docker build -t ycl:latest .
-docker run -it ycl:latest --device /dev/snd
+docker run -it --device /dev/snd:/dev/snd ycl:latest
 ```
 Inside the container
 
