@@ -2,10 +2,10 @@ import os
 import sys
 import click
 import requests
+import threading
 import youtube_dl
 from pick import Picker
 from dotenv import load_dotenv
-import threading
 
 PLAY_SUPPORT=True
 
@@ -40,10 +40,17 @@ class MyLogger(object):
 	def error(self, msg):
 		print(msg)
 
-
 def my_hook(d):
 	if d['status'] == 'finished':
-		print('Done downloading, now converting ...')
+		print("\nDownload finished. Now converting...", end="\r")
+	else:
+		percent_str = d['_percent_str']
+		downloaded_bytes = d['downloaded_bytes']
+		total_bytes = d['total_bytes']
+		elapsed = d['elapsed']
+		eta = d['eta']
+		speed = d['speed']
+		print(f"Downloaded: {percent_str} {downloaded_bytes/1000}KB of {total_bytes/1000}KB. {round(speed/1000,2)} KB/s Elapsed: {round(elapsed,2)}s", end="\r")
 
 def search(query):
 	q = " ".join(query)
