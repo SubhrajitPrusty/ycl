@@ -12,9 +12,20 @@ Search, Play(audio), Download Youtube videos from the terminal
 * Requires Gstreamer and its plugins
 
 ```bash
-sudo apt install libgstreamer1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
- gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools \
- gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-pulseaudio
+sudo apt install gstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good
+```
+
+## Docker
+
+```bash
+docker build -t ycl:latest .
+docker run -it ycl:latest --device /dev/snd
+```
+Inside the container
+
+```
+export KEY=[YOUR_YOUTUBE_API_KEY]
+ycl
 ```
 
 ## Install
