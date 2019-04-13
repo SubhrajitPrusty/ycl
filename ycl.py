@@ -106,8 +106,8 @@ def cli(query):
 		'format' : 'bestvideo+bestaudio/best',
 		'logger' : MyLogger(),
 		'progress_hooks' : [my_hook],
-		'outtmpl' : r"%(title)s.%(ext)s"
-
+		'outtmpl' : r"%(title)s.%(ext)s",
+		'updatetime' : False
 		}
 		
 		with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
