@@ -50,7 +50,7 @@ def my_hook(d):
 		elapsed = d['elapsed']
 		eta = d['eta']
 		speed = d['speed']
-		print(f"Downloaded: {percent_str} {downloaded_bytes/1000}KB of {total_bytes/1000}KB. {round(speed/1000,2)} KB/s Elapsed: {round(elapsed,2)}s", end="\r")
+		print(f"Downloaded: {percent_str} {speed_conv(downloaded_bytes)} of {speed_conv(total_bytes)}. Elapsed: {str(round(elapsed,2)).rjust(8)}s Speed: {speed_conv(speed)}/s ", end="\r", flush=True)
 
 def search(query):
 	q = " ".join(query)
@@ -73,6 +73,15 @@ def search(query):
 		sys.exit(1)
 
 	return results
+
+def speed_conv(b):
+	if b > 10**6:
+		return f"{round(b/10**6,2)} MB".rjust(10)
+	elif b > 10**3:
+		return f"{round(b/10**3,2)} KB".rjust(10)
+	else:
+		return f"{b} B".rjust(10)
+
 
 def quit_pick(picker):
 	sys.exit(0)
