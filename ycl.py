@@ -86,6 +86,75 @@ def speed_conv(b):
 def quit_pick(picker):
 	sys.exit(0)
 
+def extract_audio_url(yt_url):
+	YDL_OPTS = {
+		"format" : "bestaudio[acodec=opus]",
+		'logger' : MyLogger(),
+	}
+
+	with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
+		info = ydl.extract_info(yt_url, download=False)
+
+		audio_url = info['formats'][0]['url']
+		acodec = info['formats'][0]['acodec']
+		return audio_url, acodec
+
+def play_audio(url):
+	music_stream_uri = extract_audio_url(url)[0]
+	
+	# Create a custom bin element, that will serve as audio sink to
+	# player bin. Audio filters will be added to this sink.
+	audio_sink = Gst.Bin.new('audiosink')
+	
+	# Create element to attenuate/amplify the signal
+	amplify = Gst.ElementFactory.make('audioamplify')
+	amplify.set_property('amplification', 1)
+	audio_sink.add(amplify)
+
+	# Create element to play the pipeline to hardware
+	sink = Gst.ElementFactory.make('autoaudiosink')
+	audio_sink.add(sink)
+
+	amplify.link(sink)
+	audio_sink.add_pad(Gst.GhostPad.new('sink', amplify.get_static_pad('sink')))
+
+	# Create playbin and add the custom audio sink to it
+	player = Gst.ElementFactory.make("playbin", "player")
+	player.props.audio_sink = audio_sink
+
+	#set the uri
+	player.set_property('uri', music_stream_uri)
+
+	# Start playing
+	player.set_state(Gst.State.PLAYING)
+
+	# Listen for metadata
+	bus = player.get_bus()
+	bus.enable_sync_message_emission()
+	bus.add_signal_watch()
+	# bus.connect('message::tag', on_tag)
+
+	loop = GObject.MainLoop()
+	threading.Thread(target=loop.run).start()
+
+	# Let user stop player gracefully
+	control = " "
+	playing = True
+	while control.lower() != "s":
+		control = input("Press s to stop playing, p to toggle pause : ")
+
+		if control.lower() == "p":
+			if playing:
+				player.set_state(Gst.State.PAUSED)
+				playing = False
+			else:
+				player.set_state(Gst.State.PLAYING)
+				playing = True
+
+	player.set_state(Gst.State.NULL)
+	loop.quit()
+
+
 @click.command()
 @click.argument("query", nargs=-1)
 
@@ -127,76 +196,6 @@ def cli(query):
 			play_audio(url)
 		else:
 			print("Play support is not available for your system.")
-
-def play_audio(url):
-	
-	YDL_OPTS = {
-		"format" : "bestaudio/best",
-		'logger' : MyLogger(),
-	}
-
-	with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
-		info = ydl.extract_info(url, download=False)
-
-		audio_url = info['formats'][0]['url']
-		
-		# print('\n %s \n' % (audio_url))
-		# our stream to play
-		music_stream_uri = audio_url
-
-		title = info['title']
-		
-		# Create a custom bin element, that will serve as audio sink to
-		# player bin. Audio filters will be added to this sink.
-		audio_sink = Gst.Bin.new('audiosink')
-		
-		# Create element to attenuate/amplify the signal
-		amplify = Gst.ElementFactory.make('audioamplify')
-		amplify.set_property('amplification', 1)
-		audio_sink.add(amplify)
-
-		# Create element to play the pipeline to hardware
-		sink = Gst.ElementFactory.make('autoaudiosink')
-		audio_sink.add(sink)
-
-		amplify.link(sink)
-		audio_sink.add_pad(Gst.GhostPad.new('sink', amplify.get_static_pad('sink')))
-
-		# Create playbin and add the custom audio sink to it
-		player = Gst.ElementFactory.make("playbin", "player")
-		player.props.audio_sink = audio_sink
-
-		#set the uri
-		player.set_property('uri', music_stream_uri)
-
-		# Start playing
-		player.set_state(Gst.State.PLAYING)
-
-		# Listen for metadata
-		bus = player.get_bus()
-		bus.enable_sync_message_emission()
-		bus.add_signal_watch()
-		# bus.connect('message::tag', on_tag)
-
-		loop = GObject.MainLoop()
-		threading.Thread(target=loop.run).start()
-
-		# Let user stop player gracefully
-		control = " "
-		playing = True
-		while control.lower() != "s":
-			control = input("Press s to stop playing, p to toggle pause : ")
-
-			if control.lower() == "p":
-				if playing:
-					player.set_state(Gst.State.PAUSED)
-					playing = False
-				else:
-					player.set_state(Gst.State.PLAYING)
-					playing = True
-
-		player.set_state(Gst.State.NULL)
-		loop.quit()
 
 
 if __name__ == '__main__':
