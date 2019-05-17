@@ -52,7 +52,7 @@ def my_hook(d):
 		speed = d['speed']
 		print(f"Downloaded: {percent_str} {speed_conv(downloaded_bytes)} of {speed_conv(total_bytes)}. Elapsed: {str(round(elapsed,2)).rjust(8)}s Speed: {speed_conv(speed)}/s ", end="\r", flush=True)
 
-def search(query):
+def search_video(query):
 	q = " ".join(query)
 	PAYLOAD["q"] = q
 	r = requests.get(BASE_URL+"/search", params=PAYLOAD)
@@ -66,13 +66,61 @@ def search(query):
 			videoId = x.get("id")
 			if videoId.get("kind") == "youtube#video":
 				results.append({ "url": "https://youtube.com/watch?v=" + videoId.get("videoId"), 
-							"title" : x["snippet"]["title"], 
+								"id": videoId.get("videoId"),
+								"title" : x["snippet"]["title"], 
 						})
 	else:
 		print("Couldn't connect. Check your credentials.")
 		sys.exit(1)
 
 	return results
+
+def search_pl(query):
+	q = " ".join(query)
+	PAYLOAD["q"] = q
+	r = requests.get(BASE_URL+"/search", params=PAYLOAD)
+
+	items = r.json().get('items')
+
+	results = []
+
+	if items:
+		for x in items:
+			videoId = x.get("id")
+			if videoId.get("kind") == "youtube#playlist":
+				results.append({ "url": "https://youtube.com/playlist?list=" + videoId.get("playlistId"),
+								"id": videoId.get("playlistId"), 
+								"title" : x["snippet"]["title"],
+						})
+	else:
+		print("Couldn't connect.")
+		sys.exit(1)
+
+	return results
+
+def extract_playlist_data(pid):
+	PAYLOAD['part'] = "id,snippet"
+	PAYLOAD['playlistId'] = pid
+
+	r = requests.get(BASE_URL+"/playlistItems", params=PAYLOAD)
+
+	items = r.json().get('items')
+
+	playlistItems = []
+
+	if items:
+		for x in items:
+			snippet = x.get("snippet")
+			videoId = snippet.get("resourseId").get("videoId")
+			playlistItems.append({ "url" : "https://youtube.com/watch?v=" + videoId,
+									"id" : videoId,
+									"title" : snippet.get("title"),
+				})
+	else:
+		print("Couldn't get playlist details. Try again")
+		sys.exit(2)
+
+	return playlistItems
 
 def speed_conv(b):
 	if b > 10**6:
@@ -157,9 +205,17 @@ def play_audio(url):
 
 @click.command()
 @click.argument("query", nargs=-1)
+@click.option("--playlist", "-pl", is_flag=True, help="Searches for playlists")
 
-def cli(query):
-	results = search(query)
+def cli(query, playlist):
+	if not query:
+		print("Error: Enter a search query")
+		sys.exit(1)
+
+	if playlist:
+		results = search_pl(query)
+	else:
+		results = search_video(query)
 
 	options = [x["title"] for x in results]
 	title = f"Search results for {query} (q to quit)"
@@ -168,8 +224,8 @@ def cli(query):
 	picker.register_custom_handler(ord('q'), quit_pick)
 	option, index = picker.start()
 
-	url = f"{results[index]['url']}"
-	print(f"Selected : {url}")
+	choice = results[index]
+	print(f"Selected : {choice['url']}")
 
 	options = ["Play", "Download"]
 	title = "Choose what you want to do (q to quit)"
@@ -189,11 +245,17 @@ def cli(query):
 		}
 		
 		with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
-			ydl.download([url])
+			print(choice['url'])
+			ydl.download([choice['url']])
 
 	elif option == "Play":
 		if PLAY_SUPPORT:
-			play_audio(url)
+			if not playlist:
+				play_audio(choice['url'])
+			else:
+				for playlist_item in extract_playlist_data(choice['id']):
+					play_audio(playlist_item['url'])
+					input("Press enter to play next song")
 		else:
 			print("Play support is not available for your system.")
 
