@@ -3,12 +3,6 @@ Search, Play(audio), Download Youtube videos from the terminal
 
 ## Requirements
 
-* Requires Youtube API
-
-  Get it [here](https://developers.google.com/youtube/v3/getting-started)
-
-  Add it as `export KEY=[YOUR YOUTUBE API TOKEN]` or store it in an `.env` file.
-
 * Requires Gstreamer and its plugins
 
 ```bash
@@ -24,8 +18,7 @@ docker run -it --device /dev/snd:/dev/snd ycl:latest
 Inside the container
 
 ```
-export KEY=[YOUR_YOUTUBE_API_KEY]
-ycl
+ycl --help
 ```
 
 ## Install
@@ -38,5 +31,9 @@ pip3 install -e .
 ## Usage
 
 ```bash
-ycl [QUERY]
+Usage: ycl [OPTIONS] [QUERY]...
+
+Options:
+  -pl, --playlist  Searches for playlists
+  --help           Show this message and exit.
 ```
