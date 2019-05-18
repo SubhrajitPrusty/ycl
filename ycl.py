@@ -50,7 +50,12 @@ def my_hook(d):
 		elapsed = d['elapsed']
 		eta = d['eta']
 		speed = d['speed']
-		print(f"Downloaded: {percent_str} {speed_conv(downloaded_bytes)} of {speed_conv(total_bytes)}. Elapsed: {str(round(elapsed,2)).rjust(8)}s Speed: {speed_conv(speed)}/s ", end="\r", flush=True)
+		try:
+			print(f"Downloaded: {percent_str} {speed_conv(downloaded_bytes)} of {speed_conv(total_bytes)}.\
+			  Elapsed: {str(round(elapsed,2)).rjust(8)}s Speed: {speed_conv(speed)}/s ", end="\r", flush=True)
+		except Exception as e:
+			print(f"Downloaded: {percent_str} Unknown of Unknown.\
+			  Elapsed: {str(round(elapsed,2)).rjust(8)}s Speed: Unknown/s ", end="\r", flush=True)
 
 def search_video(query):
 	q = " ".join(query)
@@ -205,7 +210,7 @@ def play_audio(url):
 
 @click.command()
 @click.argument("query", nargs=-1)
-@click.option("--playlist", "-pl", is_flag=True, help="Searches for playlists")
+@click.option("--playlist", "-pl", default=False, is_flag=True, help="Searches for playlists")
 
 def cli(query, playlist):
 	if not query:
@@ -216,6 +221,10 @@ def cli(query, playlist):
 		results = search_pl(query)
 	else:
 		results = search_video(query)
+
+	if len(results) < 1:
+		click.secho("No results found.", fg="red")
+		sys.exit(3)
 
 	options = [x["title"] for x in results]
 	title = f"Search results for {query} (q to quit)"
@@ -245,7 +254,6 @@ def cli(query, playlist):
 		}
 		
 		with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
-			print(choice['url'])
 			ydl.download([choice['url']])
 
 	elif option == "Play":
