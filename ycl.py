@@ -6,6 +6,7 @@ import threading
 import youtube_dl
 from pick import Picker
 from dotenv import load_dotenv
+from urllib.parse import urlparse, parse_qs
 
 PLAY_SUPPORT=True
 
@@ -24,11 +25,7 @@ load_dotenv()
 KEY=os.environ.get("KEY")
 BASE_URL="https://www.googleapis.com/youtube/v3"
 
-PAYLOAD = {
-	"part": "snippet",
-	"maxResults": 25,
-	"key" : KEY
-}
+PAYLOAD = dict()
 
 class MyLogger(object):
 	def debug(self, msg):
@@ -57,9 +54,45 @@ def my_hook(d):
 			print(f"Downloaded: {percent_str} Unknown of Unknown.\
 			  Elapsed: {str(round(elapsed,2)).rjust(8)}s Speed: Unknown/s ", end="\r", flush=True)
 
+def isValidURL(url, urlType="video"):
+	PAYLOAD['key'] = KEY
+	PAYLOAD["part"] = "snippet"
+
+	parsed = urlparse(url)
+	qss = parse_qs(parsed.query)
+
+	try:
+		if urlType == "video":
+			videoId = qss['v'].pop()
+
+			PAYLOAD["id"] = videoId
+
+			r = requests.get(BASE_URL+"/videos", params=PAYLOAD)
+		else:
+			playlistId = qss['list'].pop()
+			
+			PAYLOAD["id"] = playlistId
+
+			r = requests.get(BASE_URL+"/playlists", params=PAYLOAD)
+
+		found = r.json()['pageInfo']['totalResults']
+
+		if found:
+			details = r.json().get('items').pop()
+			return True, details
+	except Exception as e:
+		pass
+	
+	return False, None
+
+
 def search_video(query):
-	q = " ".join(query)
-	PAYLOAD["q"] = q
+	PAYLOAD['key'] = KEY
+
+	PAYLOAD["part"] = "snippet"
+	PAYLOAD["maxResults"] = 25
+	PAYLOAD["q"] = query
+
 	r = requests.get(BASE_URL+"/search", params=PAYLOAD)
 
 	items = r.json().get('items')
@@ -75,14 +108,18 @@ def search_video(query):
 								"title" : x["snippet"]["title"], 
 						})
 	else:
-		print("Couldn't connect. Check your credentials.")
+		print("Couldn't connect.")
 		sys.exit(1)
 
 	return results
 
 def search_pl(query):
-	q = " ".join(query)
-	PAYLOAD["q"] = q
+	PAYLOAD['key'] = KEY
+
+	PAYLOAD['part'] = "snippet"
+	PAYLOAD["maxResults"] = 25
+	PAYLOAD["q"] = query
+
 	r = requests.get(BASE_URL+"/search", params=PAYLOAD)
 
 	items = r.json().get('items')
@@ -91,10 +128,10 @@ def search_pl(query):
 
 	if items:
 		for x in items:
-			videoId = x.get("id")
-			if videoId.get("kind") == "youtube#playlist":
-				results.append({ "url": "https://youtube.com/playlist?list=" + videoId.get("playlistId"),
-								"id": videoId.get("playlistId"), 
+			playlistId = x.get("id")
+			if playlistId.get("kind") == "youtube#playlist":
+				results.append({ "url": "https://youtube.com/playlist?list=" + playlistId.get("playlistId"),
+								"id": playlistId.get("playlistId"), 
 								"title" : x["snippet"]["title"],
 						})
 	else:
@@ -103,9 +140,14 @@ def search_pl(query):
 
 	return results
 
-def extract_playlist_data(pid):
-	PAYLOAD['part'] = "id,snippet"
-	PAYLOAD['playlistId'] = pid
+def extract_playlist_data(url):
+	PAYLOAD = dict()
+	PAYLOAD['key'] = KEY
+	parsed = urlparse(url)
+	qss = parse_qs(parsed.query)
+
+	PAYLOAD['part'] = "snippet"
+	PAYLOAD['playlistId'] = qss['list'].pop()
 
 	r = requests.get(BASE_URL+"/playlistItems", params=PAYLOAD)
 
@@ -116,12 +158,13 @@ def extract_playlist_data(pid):
 	if items:
 		for x in items:
 			snippet = x.get("snippet")
-			videoId = snippet.get("resourseId").get("videoId")
+			videoId = snippet.get("resourceId").get("videoId")
 			playlistItems.append({ "url" : "https://youtube.com/watch?v=" + videoId,
 									"id" : videoId,
 									"title" : snippet.get("title"),
 				})
 	else:
+		print(r.json())
 		print("Couldn't get playlist details. Try again")
 		sys.exit(2)
 
@@ -134,6 +177,18 @@ def speed_conv(b):
 		return f"{round(b/10**3,2)} KB".rjust(10)
 	else:
 		return f"{b} B".rjust(10)
+
+def download_video(url):
+	YDL_OPTS = {
+		'format' : 'bestvideo+bestaudio/best',
+		'logger' : MyLogger(),
+		'progress_hooks' : [my_hook],
+		'outtmpl' : r"%(title)s.%(ext)s",
+		'updatetime' : False
+	}
+	
+	with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
+		ydl.download([url])
 
 
 def quit_pick(picker):
@@ -192,50 +247,85 @@ def play_audio(url):
 
 	# Let user stop player gracefully
 	control = " "
-	playing = True
+	state = "Playing"
+	
 	while control.lower() != "s":
-		control = input("Press s to stop playing, p to toggle pause : ")
+		control = input(f"{state}: STOP/PLAY-PAUSE/QUIT (s/p/q) : ")
 
 		if control.lower() == "p":
-			if playing:
+			if state == "Playing":
 				player.set_state(Gst.State.PAUSED)
-				playing = False
+				state = "Paused"
 			else:
 				player.set_state(Gst.State.PLAYING)
-				playing = True
-
-	player.set_state(Gst.State.NULL)
-	loop.quit()
-
+				state = "Playing"
+		if control.lower() == 'q':
+			player.set_state(Gst.State.NULL)
+			loop.quit()
+			sys.exit(0)
+	else:
+		player.set_state(Gst.State.NULL)
+		loop.quit()
+		
 
 @click.command()
 @click.argument("query", nargs=-1)
-@click.option("--playlist", "-pl", default=False, is_flag=True, help="Searches for playlists")
+@click.option("--playlistsearch", "-ps", default=False, is_flag=True, help="Searches for playlists")
+@click.option("--video", "-v", default=False, is_flag=True, help="Use a direct video link")
+@click.option("--playlist", "-pl", default=False, is_flag=True, help="Use a direct playlist link")
 
-def cli(query, playlist):
+def cli(query, playlistsearch, video, playlist):
 	if not query:
 		print("Error: Enter a search query")
 		sys.exit(1)
 
-	if playlist:
-		results = search_pl(query)
+	query = " ".join(query)
+
+	url = ""
+	choice = dict()
+
+	if video:
+		isValid, details = isValidURL(query, urlType="video")
+		if isValid:
+			print(f"Selected : {url}")
+			choice['id'] = details['id']
+			choice['url'] = query
+			choice['title'] = details['snippet']['title']
+		else:
+			print("Invalid URL")
+			sys.exit(3)
+	elif playlist:
+		isValid, details = isValidURL(query, urlType="playlist")
+		url = query
+		if isValid:
+			print(f"Selected : {url}")
+			choice['id'] = details['id']
+			choice['url'] = query
+			choice['title'] = details['snippet']['title']
+		else:
+			print("Invalid URL")
+			sys.exit(3)
 	else:
-		results = search_video(query)
+		if playlistsearch:
+			results = search_pl(query)
+		else:
+			results = search_video(query)
 
-	if len(results) < 1:
-		click.secho("No results found.", fg="red")
-		sys.exit(3)
+		if len(results) < 1:
+			click.secho("No results found.", fg="red")
+			sys.exit(3)
 
-	options = [x["title"] for x in results]
-	title = f"Search results for {query} (q to quit)"
+		options = [x["title"] for x in results]
+		title = f"Search results for {query} (q to quit)"
 
-	picker = Picker(options, title)
-	picker.register_custom_handler(ord('q'), quit_pick)
-	option, index = picker.start()
+		picker = Picker(options, title)
+		picker.register_custom_handler(ord('q'), quit_pick)
+		option, index = picker.start()
 
-	choice = results[index]
-	print(f"Selected : {choice['url']}")
-
+		choice = results[index]
+		url = choice['url']
+		print(f"Selected : {url}")
+	
 	options = ["Play", "Download"]
 	title = "Choose what you want to do (q to quit)"
 	picker = Picker(options, title)
@@ -245,27 +335,21 @@ def cli(query, playlist):
 	option, index = picker.start()
 
 	if option == "Download":
-		YDL_OPTS = {
-		'format' : 'bestvideo+bestaudio/best',
-		'logger' : MyLogger(),
-		'progress_hooks' : [my_hook],
-		'outtmpl' : r"%(title)s.%(ext)s",
-		'updatetime' : False
-		}
-		
-		with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
-			ydl.download([choice['url']])
-
+		download_video(url)
 	elif option == "Play":
-		if PLAY_SUPPORT:
-			if not playlist:
-				play_audio(choice['url'])
-			else:
-				for playlist_item in extract_playlist_data(choice['id']):
-					play_audio(playlist_item['url'])
-					input("Press enter to play next song")
-		else:
+		if not PLAY_SUPPORT:
 			print("Play support is not available for your system.")
+			sys.exit(2)
+
+		if playlist or playlistsearch:
+			for playlist_item in extract_playlist_data(choice['url']):
+				print(f"Playing {playlist_item['title']}")
+				play_audio(playlist_item['url'])
+				input("Press enter to play next song:")
+		else:
+			print(f"Playing {choice['title']}")
+			play_audio(choice['url'])
+
 
 
 if __name__ == '__main__':
