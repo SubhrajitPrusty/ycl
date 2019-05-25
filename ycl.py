@@ -394,7 +394,7 @@ def cli(query, playlistsearch, video, playlist):
 					play_audio(playlist_item['url'])
 	else:
 		if option == "Download":
-				print(f"Dowloading {choice['url']}")
+				print(f"Dowloading {choice['title']}")
 				download_video(choice['url'])
 		elif option == "Play":
 			if not PLAY_SUPPORT:
