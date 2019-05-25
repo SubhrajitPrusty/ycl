@@ -40,14 +40,15 @@ class MyLogger(object):
 def my_hook(d):
 	if d['status'] == 'finished':
 		print("\nDownload finished. Now converting...", end="\r")
+		print("Downloaded {}".format(d['filename']))
 	else:
-		percent_str = d['_percent_str']
-		downloaded_bytes = d['downloaded_bytes']
-		total_bytes = d['total_bytes']
-		elapsed = d['elapsed']
-		eta = d['eta']
-		speed = d['speed']
 		try:
+			percent_str = d.get('_percent_str')
+			downloaded_bytes = d.get('downloaded_bytes')
+			total_bytes = d.get('total_bytes')
+			elapsed = d.get('elapsed')
+			eta = d.get('eta')
+			speed = d.get('speed')
 			print(f"Downloaded: {percent_str} {speed_conv(downloaded_bytes)} of {speed_conv(total_bytes)}.\
 			  Elapsed: {str(round(elapsed,2)).rjust(8)}s Speed: {speed_conv(speed)}/s ", end="\r", flush=True)
 		except Exception as e:
@@ -143,20 +144,33 @@ def search_pl(query):
 def extract_playlist_data(url):
 	PAYLOAD = dict()
 	PAYLOAD['key'] = KEY
+	PAYLOAD["maxResults"] = 50
 	parsed = urlparse(url)
 	qss = parse_qs(parsed.query)
 
 	PAYLOAD['part'] = "snippet"
 	PAYLOAD['playlistId'] = qss['list'].pop()
+	PAYLOAD['pageToken'] = ""
 
 	r = requests.get(BASE_URL+"/playlistItems", params=PAYLOAD)
 
 	items = r.json().get('items')
 
 	playlistItems = []
+	totalItems = []
+
+	totalResults = r.json()['pageInfo']['totalResults']
 
 	if items:
-		for x in items:
+		totalItems += items
+		while len(totalItems) < totalResults:
+			nextPageToken = r.json()['nextPageToken']
+			PAYLOAD['pageToken'] = nextPageToken
+			r = requests.get(BASE_URL+"/playlistItems", params=PAYLOAD)
+			items = r.json().get('items')
+			totalItems += items
+
+		for x in totalItems:
 			snippet = x.get("snippet")
 			videoId = snippet.get("resourceId").get("videoId")
 			playlistItems.append({ "url" : "https://youtube.com/watch?v=" + videoId,
@@ -164,7 +178,7 @@ def extract_playlist_data(url):
 									"title" : snippet.get("title"),
 				})
 	else:
-		print(r.json())
+		# print(r.json())
 		print("Couldn't get playlist details. Try again")
 		sys.exit(2)
 
@@ -184,31 +198,44 @@ def download_video(url):
 		'logger' : MyLogger(),
 		'progress_hooks' : [my_hook],
 		'outtmpl' : r"%(title)s.%(ext)s",
+		'ignore-errors': True,
 		'updatetime' : False
 	}
 	
-	with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
-		ydl.download([url])
-
+	try:
+		with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
+			ydl.download([url])
+	except Exception as e:
+		print("Error :", e)
+	
 
 def quit_pick(picker):
 	sys.exit(0)
 
 def extract_audio_url(yt_url):
 	YDL_OPTS = {
+		"ignore-errors" : True,
 		"format" : "bestaudio[acodec=opus]",
 		'logger' : MyLogger(),
 	}
 
-	with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
-		info = ydl.extract_info(yt_url, download=False)
+	try:
+		with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
+			info = ydl.extract_info(yt_url, download=False)
 
-		audio_url = info['formats'][0]['url']
-		acodec = info['formats'][0]['acodec']
-		return audio_url, acodec
+			audio_url = info['formats'][0]['url']
+			acodec = info['formats'][0]['acodec']		
+			return audio_url, acodec
+	except Exception as e:
+		print("Error :", e)
+		return None, None
+		
 
 def play_audio(url):
 	music_stream_uri = extract_audio_url(url)[0]
+
+	if not music_stream_uri:
+		return
 	
 	# Create a custom bin element, that will serve as audio sink to
 	# player bin. Audio filters will be added to this sink.
@@ -287,7 +314,7 @@ def cli(query, playlistsearch, video, playlist):
 	if video:
 		isValid, details = isValidURL(query, urlType="video")
 		if isValid:
-			print(f"Selected : {url}")
+			# print(f"Selected : {url}")
 			choice['id'] = details['id']
 			choice['url'] = query
 			choice['title'] = details['snippet']['title']
@@ -298,7 +325,7 @@ def cli(query, playlistsearch, video, playlist):
 		isValid, details = isValidURL(query, urlType="playlist")
 		url = query
 		if isValid:
-			print(f"Selected : {url}")
+			# print(f"Selected : {url}")
 			choice['id'] = details['id']
 			choice['url'] = query
 			choice['title'] = details['snippet']['title']
@@ -323,8 +350,8 @@ def cli(query, playlistsearch, video, playlist):
 		option, index = picker.start()
 
 		choice = results[index]
-		url = choice['url']
-		print(f"Selected : {url}")
+		
+	print(f"Selected : {choice['url']}")
 	
 	options = ["Play", "Download"]
 	title = "Choose what you want to do (q to quit)"
@@ -333,23 +360,32 @@ def cli(query, playlistsearch, video, playlist):
 	picker.register_custom_handler(ord('q'), quit_pick)
 
 	option, index = picker.start()
-
-	if option == "Download":
-		download_video(url)
-	elif option == "Play":
-		if not PLAY_SUPPORT:
-			print("Play support is not available for your system.")
-			sys.exit(2)
-
-		if playlist or playlistsearch:
+		
+	if playlist or playlistsearch:
+		if option == "Download":
 			for playlist_item in extract_playlist_data(choice['url']):
-				print(f"Playing {playlist_item['title']}")
-				play_audio(playlist_item['url'])
-				input("Press enter to play next song:")
-		else:
-			print(f"Playing {choice['title']}")
-			play_audio(choice['url'])
-
+				print(f"Downloading {playlist_item['title']}")
+				download_video(playlist_item['url'])
+		elif option == "Play":
+			if not PLAY_SUPPORT:
+				print("Play support is not available for your system.")
+				sys.exit(2)
+			else:
+				for playlist_item in extract_playlist_data(choice['url']):
+					print(f"Playing {playlist_item['title']}")
+					play_audio(playlist_item['url'])
+					input("Press enter to play next song:")
+	else:
+		if option == "Download":
+				print(f"Dowloading {choice['url']}")
+				download_video(choice['url'])
+		elif option == "Play":
+			if not PLAY_SUPPORT:
+				print("Play support is not available for your system.")
+				sys.exit(2)
+			else:
+				print(f"Playing {choice['title']}")
+				play_audio(choice['url'])
 
 
 if __name__ == '__main__':
