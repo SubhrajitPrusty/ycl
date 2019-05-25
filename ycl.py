@@ -230,6 +230,18 @@ def extract_audio_url(yt_url):
 		print("Error :", e)
 		return None, None
 		
+def rewind_callback(player):
+    rc, pos_int = player.query_position(Gst.Format.TIME)
+    seek_ns = pos_int - 10 * 1000000000
+    if seek_ns < 0:
+        seek_ns = 0
+    player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, seek_ns)
+        
+def forward_callback(player):
+    rc, pos_int = player.query_position(Gst.Format.TIME)
+    seek_ns = pos_int + 10 * 1000000000
+    player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, seek_ns)
+
 
 def play_audio(url):
 	music_stream_uri = extract_audio_url(url)[0]
@@ -276,23 +288,29 @@ def play_audio(url):
 	control = " "
 	state = "Playing"
 	
-	while control.lower() != "s":
-		control = input(f"{state}: STOP/PLAY-PAUSE/QUIT (s/p/q) : ")
+	while True:
+		control = input(f"{state}: STOP/PLAY-PAUSE/FF/RR/QUIT (s/p/l/j/q) : ")
+		
+		if control.lower() == "s" or control.lower() == "":
+			player.set_state(Gst.State.NULL)
+			loop.quit()
+			break
 
-		if control.lower() == "p":
+		elif control.lower() == "p":
 			if state == "Playing":
 				player.set_state(Gst.State.PAUSED)
 				state = "Paused"
 			else:
 				player.set_state(Gst.State.PLAYING)
 				state = "Playing"
-		if control.lower() == 'q':
+		elif control.lower() == 'l':
+			forward_callback(player)
+		elif control.lower() == 'j':
+			rewind_callback(player)
+		elif control.lower() == 'q':
 			player.set_state(Gst.State.NULL)
 			loop.quit()
-			sys.exit(0)
-	else:
-		player.set_state(Gst.State.NULL)
-		loop.quit()
+			sys.exit(0)		
 		
 
 @click.command()
@@ -374,7 +392,6 @@ def cli(query, playlistsearch, video, playlist):
 				for playlist_item in extract_playlist_data(choice['url']):
 					print(f"Playing {playlist_item['title']}")
 					play_audio(playlist_item['url'])
-					input("Press enter to play next song:")
 	else:
 		if option == "Download":
 				print(f"Dowloading {choice['url']}")
