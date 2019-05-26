@@ -56,6 +56,16 @@ def my_hook(d):
 			  Elapsed: {str(round(elapsed,2)).rjust(8)}s Speed: Unknown/s ", end="\r", flush=True)
 
 def isValidURL(url, urlType="video"):
+	"""
+	Parameters:
+		url : url as string
+		urlType : video/playlist
+
+	Returns:
+		if valid : True, details - a dict with relevant details
+		else : False, None
+
+	"""
 	PAYLOAD['key'] = KEY
 	PAYLOAD["part"] = "snippet"
 
@@ -88,6 +98,19 @@ def isValidURL(url, urlType="video"):
 
 
 def search_video(query):
+	"""
+	Parameters:
+		query : query string
+
+	Returns:
+		results : list of dictionaries
+		{
+			"url" : "",
+			"id" : "",
+			"title": "",				
+		}
+	"""
+
 	PAYLOAD['key'] = KEY
 
 	PAYLOAD["part"] = "snippet"
@@ -231,16 +254,49 @@ def extract_audio_url(yt_url):
 		return None, None
 		
 def rewind_callback(player):
-    rc, pos_int = player.query_position(Gst.Format.TIME)
-    seek_ns = pos_int - 10 * 1000000000
-    if seek_ns < 0:
-        seek_ns = 0
-    player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, seek_ns)
-        
+	rc, pos_int = player.query_position(Gst.Format.TIME)
+	seek_ns = pos_int - 10 * 1000000000
+	if seek_ns < 0:
+		seek_ns = 0
+	player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, seek_ns)
+		
 def forward_callback(player):
-    rc, pos_int = player.query_position(Gst.Format.TIME)
-    seek_ns = pos_int + 10 * 1000000000
-    player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, seek_ns)
+	rc, pos_int = player.query_position(Gst.Format.TIME)
+	seek_ns = pos_int + 10 * 1000000000
+	player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, seek_ns)
+
+def create_player(url):
+	music_stream_uri = extract_audio_url(url)[0]
+
+	if not music_stream_uri:
+		return
+	
+	# Create a custom bin element, that will serve as audio sink to
+	# player bin. Audio filters will be added to this sink.
+	audio_sink = Gst.Bin.new('audiosink')
+	
+	# Create element to attenuate/amplify the signal
+	amplify = Gst.ElementFactory.make('audioamplify')
+	amplify.set_property('amplification', 1)
+	audio_sink.add(amplify)
+
+	# Create element to play the pipeline to hardware
+	sink = Gst.ElementFactory.make('autoaudiosink')
+	audio_sink.add(sink)
+
+	amplify.link(sink)
+	audio_sink.add_pad(Gst.GhostPad.new('sink', amplify.get_static_pad('sink')))
+
+	# Create playbin and add the custom audio sink to it
+	player = Gst.ElementFactory.make("playbin", "player")
+	player.props.audio_sink = audio_sink
+
+	#set the uri
+	player.set_property('uri', music_stream_uri)
+
+	loop = GObject.MainLoop()
+
+	return player, loop
 
 
 def play_audio(url):
