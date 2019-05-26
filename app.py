@@ -1,6 +1,7 @@
 import sys
 import ycl
 import curses
+from time import sleep
 import npyscreen as nps
 from threading import Thread
 
@@ -62,11 +63,8 @@ class playerForm(nps.Form):
     def create(self):
         self.add_handlers({
             "p": self.toggle_pause_player,
-            "P": self.toggle_pause_player,
             "s": self.stop_player,
-            "S": self.stop_player,
             "q": self.quit_player,
-            "Q": self.quit_player,
             curses.KEY_RIGHT: self.seek_ahead,
             curses.KEY_LEFT: self.seek_behind
             })
@@ -77,20 +75,45 @@ class playerForm(nps.Form):
         self.player = player 
         self.loop = loop
         self.player.set_state(Gst.State.PLAYING)
-        self.STATE = "PLAYING"
+        self.PLAYING = True
         Thread(target=self.loop.run).start()
+        self.display()
 
+        thread_pl_pos = Thread(target=self.update_pos)
+        thread_pl_pos.daemon = True
+        thread_pl_pos.start()
+        
 
     def afterEditing(self):
+        self.stop_player()
         self.parentApp.setNextForm(None)
 
+    def get_player_pos(self):
+        rc, pos_int = self.player.query_position(Gst.Format.TIME)
+        rc, dur_nano = self.player.query_duration(Gst.Format.TIME)
+        seconds_curr = pos_int // 10**9
+        mins_curr = seconds_curr // 60
+        secs_curr= seconds_curr % 60
+
+        seconds_tot = dur_nano // 10**9
+        mins_tot = seconds_tot // 60
+        secs_tot = seconds_tot % 60
+
+        return "{}\n{}:{}/{}:{}".format(choice['title'], mins_curr, secs_curr, mins_tot, secs_tot)
+
+    def update_pos(self):
+        while True:
+            self.display_details.value = self.get_player_pos()
+            self.display_details.display()
+            sleep(1)
+
     def toggle_pause_player(self, *args, **kwargs):
-        if self.STATE == "PLAYING":
+        if self.PLAYING:
             self.player.set_state(Gst.State.PAUSED)
-            self.state = "PAUSED"
-        elif self.STATE == "PAUSED":
+            self.PLAYING = False
+        else:
             self.player.set_state(Gst.State.PLAYING)
-            self.state = "PLAYING"
+            self.PLAYING = True
 
     def seek_behind(self, *args, **kwargs):
         rc, pos_int = self.player.query_position(Gst.Format.TIME)
@@ -107,6 +130,7 @@ class playerForm(nps.Form):
     def stop_player(self, *args, **kwargs):
         self.player.set_state(Gst.State.NULL)
         self.loop.quit()
+        self.parentApp.setNextForm(None)
 
     def quit_player(self, *args, **kwargs):
         self.stop_player()
