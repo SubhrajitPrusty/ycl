@@ -300,44 +300,8 @@ def create_player(url):
 
 
 def play_audio(url):
-	music_stream_uri = extract_audio_url(url)[0]
-
-	if not music_stream_uri:
-		return
+	player, loop = create_player(url)
 	
-	# Create a custom bin element, that will serve as audio sink to
-	# player bin. Audio filters will be added to this sink.
-	audio_sink = Gst.Bin.new('audiosink')
-	
-	# Create element to attenuate/amplify the signal
-	amplify = Gst.ElementFactory.make('audioamplify')
-	amplify.set_property('amplification', 1)
-	audio_sink.add(amplify)
-
-	# Create element to play the pipeline to hardware
-	sink = Gst.ElementFactory.make('autoaudiosink')
-	audio_sink.add(sink)
-
-	amplify.link(sink)
-	audio_sink.add_pad(Gst.GhostPad.new('sink', amplify.get_static_pad('sink')))
-
-	# Create playbin and add the custom audio sink to it
-	player = Gst.ElementFactory.make("playbin", "player")
-	player.props.audio_sink = audio_sink
-
-	#set the uri
-	player.set_property('uri', music_stream_uri)
-
-	# Start playing
-	player.set_state(Gst.State.PLAYING)
-
-	# Listen for metadata
-	bus = player.get_bus()
-	bus.enable_sync_message_emission()
-	bus.add_signal_watch()
-	# bus.connect('message::tag', on_tag)
-
-	loop = GObject.MainLoop()
 	threading.Thread(target=loop.run).start()
 
 	# Let user stop player gracefully
