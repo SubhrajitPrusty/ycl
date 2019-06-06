@@ -306,6 +306,7 @@ def play_audio(url):
 
 	# Let user stop player gracefully
 	control = " "
+	player.set_state(Gst.State.PLAYING)
 	state = "Playing"
 	
 	while True:
