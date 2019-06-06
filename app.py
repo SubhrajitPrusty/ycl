@@ -1,8 +1,9 @@
 import sys
-import ycl
 import curses
 from time import sleep
 import npyscreen as nps
+from tools.player import *
+from tools.youtube import *
 from threading import Thread
 
 import gi
@@ -17,147 +18,162 @@ choice = None
 player = None
 loop = None
 
-class searchForm(nps.Form):
-    def create(self):
-        self.search = self.add(nps.TitleText, name="Search")
+def quit_app(*args, **kwargs):
+	sys.exit(2)
 
-    def afterEditing(self):
-        nextForm = self.parentApp.getForm('RESULTS')
-        self.results = ycl.search_video(self.search.value)
-        global results
-        results = self.results
-        nextForm.selected.values = [item['title'] for item in self.results]
-        self.parentApp.switchForm('RESULTS')
+class searchForm(nps.Form):
+	def create(self):
+		self.search = self.add(nps.TitleText, name="Search")
+		self.add_handlers({
+			'q': quit_app})
+
+	def afterEditing(self):
+		nextForm = self.parentApp.getForm('RESULTS')
+		if len(self.search.value) < 1:
+			self.parentApp.switchForm('MAIN')
+		else:
+			self.results = search_video(self.search.value)
+			global results
+			results = self.results
+			nextForm.selected.values = [item['title'] for item in self.results]
+			self.parentApp.switchForm('RESULTS')
 
 class resultForm(nps.Form):
-    def create(self):
-        self.selected = self.add(nps.TitleSelectOne, name="Results")
+	def create(self):
+		self.selected = self.add(nps.TitleSelectOne, name="Results")
+		self.add_handlers({
+			'q': quit_app})
 
-    def afterEditing(self):
-        nextForm = self.parentApp.getForm('DECISION')
-        self.choice = results[self.selected.get_value()[0]]
-        global choice
-        choice = self.choice
-        nextForm.display_choice.value = self.choice['title'] + " " + self.choice['url']
-        self.parentApp.switchForm('DECISION')       
+
+	def afterEditing(self):
+		nextForm = self.parentApp.getForm('DECISION')
+		self.choice = results[self.selected.get_value()[0]]
+		global choice
+		choice = self.choice
+		nextForm.display_choice.value = self.choice['title'] + " " + self.choice['url']
+		self.parentApp.switchForm('DECISION')		
 
 class decisionForm(nps.Form):
-    def create(self):
-        self.display_choice = self.add(nps.FixedText, name="Selected :")
-        self.decision = self.add(nps.TitleSelectOne, values=['Play', 'Download'], name="Choose what to do")
+	def create(self):
+		self.display_choice = self.add(nps.FixedText, name="Selected :")
+		self.decision = self.add(nps.TitleSelectOne, values=['Play', 'Download'], name="Choose what to do")
+		self.add_handlers({
+			'q': quit_app})
 
-    def afterEditing(self):
-        if self.decision.get_value()[0] == 0:
-            # ycl.play_audio(choice['url'])
-            pl, lo = ycl.create_player(choice['url'])
-            global player, loop
-            player = pl
-            loop = lo
-            self.parentApp.switchForm('PLAYER')
 
-        elif self.decision.get_value()[0] == 1:
-            # ycl.download_video(choice['url'])
-            self.parentApp.switchForm('DOWNLOADER')
+	def afterEditing(self):
+		if self.decision.get_value()[0] == 0:
+			pl, lo = create_player(choice['url'])
+			global player, loop
+			player = pl
+			loop = lo
+			self.parentApp.switchForm('PLAYER')
+
+		elif self.decision.get_value()[0] == 1:
+			self.parentApp.switchForm('DOWNLOADER')
 
 class playerForm(nps.Form):
-    def create(self):
-        self.add_handlers({
-            "p": self.toggle_pause_player,
-            "s": self.stop_player,
-            "q": self.quit_player,
-            curses.KEY_RIGHT: self.seek_ahead,
-            curses.KEY_LEFT: self.seek_behind
-            })
-        self.display_details = self.add(nps.TitleFixedText, name="Now Playing")
+	def create(self):
+		self.add_handlers({
+			"p": self.toggle_pause_player,
+			"s": self.stop_player,
+			"q": self.quit_player,
+			curses.KEY_RIGHT: self.seek_ahead,
+			curses.KEY_LEFT: self.seek_behind
+			})
+		self.display_details = self.add(nps.TitleFixedText, name="Now Playing")
 
-    def beforeEditing(self):
-        global player, loop
-        self.player = player 
-        self.loop = loop
-        self.player.set_state(Gst.State.PLAYING)
-        self.PLAYING = True
-        Thread(target=self.loop.run).start()
-        self.display()
+	def beforeEditing(self):
+		global player, loop
+		self.player = player 
+		self.loop = loop
+		self.player.set_state(Gst.State.PLAYING)
+		self.PLAYING = True
+		Thread(target=self.loop.run).start()
+		self.display()
 
-        thread_pl_pos = Thread(target=self.update_pos)
-        thread_pl_pos.daemon = True
-        thread_pl_pos.start()
-        
+		thread_pl_pos = Thread(target=self.update_pos)
+		thread_pl_pos.daemon = True
+		thread_pl_pos.start()
+		
 
-    def afterEditing(self):
-        self.stop_player()
-        self.parentApp.setNextForm(None)
+	def afterEditing(self):
+		self.stop_player()
+		self.parentApp.setNextForm(None)
 
-    def get_player_pos(self):
-        rc, pos_int = self.player.query_position(Gst.Format.TIME)
-        rc, dur_nano = self.player.query_duration(Gst.Format.TIME)
-        seconds_curr = pos_int // 10**9
-        mins_curr = seconds_curr // 60
-        secs_curr= seconds_curr % 60
+	def get_player_pos(self):
+		rc, pos_int = self.player.query_position(Gst.Format.TIME)
+		rc, dur_nano = self.player.query_duration(Gst.Format.TIME)
+		seconds_curr = pos_int // 10**9
+		mins_curr = seconds_curr // 60
+		secs_curr= seconds_curr % 60
 
-        seconds_tot = dur_nano // 10**9
-        mins_tot = seconds_tot // 60
-        secs_tot = seconds_tot % 60
+		seconds_tot = dur_nano // 10**9
+		mins_tot = seconds_tot // 60
+		secs_tot = seconds_tot % 60
 
-        return "{}\n{}:{}/{}:{}".format(choice['title'], mins_curr, secs_curr, mins_tot, secs_tot)
+		return "{}\n{}:{}/{}:{}".format(choice['title'], mins_curr, secs_curr, mins_tot, secs_tot)
 
-    def update_pos(self):
-        while True:
-            self.display_details.value = self.get_player_pos()
-            self.display_details.display()
-            sleep(1)
+	def update_pos(self):
+		while True:
+			self.display_details.value = self.get_player_pos()
+			self.display_details.display()
+			sleep(1)
 
-    def toggle_pause_player(self, *args, **kwargs):
-        if self.PLAYING:
-            self.player.set_state(Gst.State.PAUSED)
-            self.PLAYING = False
-        else:
-            self.player.set_state(Gst.State.PLAYING)
-            self.PLAYING = True
+	def toggle_pause_player(self, *args, **kwargs):
+		if self.PLAYING:
+			self.player.set_state(Gst.State.PAUSED)
+			self.PLAYING = False
+		else:
+			self.player.set_state(Gst.State.PLAYING)
+			self.PLAYING = True
 
-    def seek_behind(self, *args, **kwargs):
-        rc, pos_int = self.player.query_position(Gst.Format.TIME)
-        seek_ns = pos_int - 10 * 1000000000
-        if seek_ns < 0:
-            seek_ns = 0
-        self.player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, seek_ns)
-        
-    def seek_ahead(self, *args, **kwargs):
-        rc, pos_int = self.player.query_position(Gst.Format.TIME)
-        seek_ns = pos_int + 10 * 1000000000
-        self.player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, seek_ns)
+	def seek_behind(self, *args, **kwargs):
+		rc, pos_int = self.player.query_position(Gst.Format.TIME)
+		seek_ns = pos_int - 10 * 1000000000
+		if seek_ns < 0:
+			seek_ns = 0
+		self.player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, seek_ns)
+		
+	def seek_ahead(self, *args, **kwargs):
+		rc, pos_int = self.player.query_position(Gst.Format.TIME)
+		seek_ns = pos_int + 10 * 1000000000
+		self.player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, seek_ns)
 
-    def stop_player(self, *args, **kwargs):
-        self.player.set_state(Gst.State.NULL)
-        self.loop.quit()
-        self.parentApp.setNextForm(None)
+	def stop_player(self, *args, **kwargs):
+		self.player.set_state(Gst.State.NULL)
+		self.loop.quit()
+		self.parentApp.setNextForm(None)
 
-    def quit_player(self, *args, **kwargs):
-        self.stop_player()
-        sys.exit(0)
+	def quit_player(self, *args, **kwargs):
+		self.stop_player()
+		sys.exit(0)
 
 
 class downloadForm(nps.Form):
-    def create(self):
-        self.display_details = self.add(nps.TitleFixedText, name="Downloading")
+	def create(self):
+		self.display_details = self.add(nps.TitleFixedText, name="Downloading")
 
-    def afterEditing(self):
-        self.parentApp.setNextForm(None)
+	def afterEditing(self):
+		self.parentApp.setNextForm(None)
 
 class yclApp(nps.NPSAppManaged):
-    results = None
-    choice = None
-    player = None
-    loop = None
-    def onStart(self):
-        self.TITLE = "YCL - Youtube Command Line"
-        self.addForm('MAIN', searchForm, name=self.TITLE)
-        self.addForm('RESULTS', resultForm, name=self.TITLE)
-        self.addForm('DECISION', decisionForm, name=self.TITLE)
-        self.addForm('PLAYER', playerForm, name=self.TITLE)
-        self.addForm('DOWNLOADER', downloadForm, name=self.TITLE)
+	results = None
+	choice = None
+	player = None
+	loop = None
+	def onStart(self):
+		self.TITLE = "YCL - Youtube Command Line"
+		self.addForm('MAIN', searchForm, name=self.TITLE)
+		self.addForm('RESULTS', resultForm, name=self.TITLE)
+		self.addForm('DECISION', decisionForm, name=self.TITLE)
+		self.addForm('PLAYER', playerForm, name=self.TITLE)
+		self.addForm('DOWNLOADER', downloadForm, name=self.TITLE)
 
+
+def main():
+	myapp = yclApp()
+	myapp.run()
 
 if __name__ == '__main__':
-    myapp = yclApp()
-    myapp.run()
+	main()
