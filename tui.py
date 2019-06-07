@@ -54,7 +54,7 @@ class resultForm(nps.Form):
 			self.choice = results[self.selected.get_value()[0]]
 			global choice
 			choice = self.choice
-			nextForm.display_choice.value = f"Selected : {self.choice['title']} {self.choice['url']}"
+			nextForm.display_choice.value = f" {self.choice['title']} {self.choice['url']} "
 			self.parentApp.switchForm('DECISION')		
 		except Exception as e:
 			nps.notify("Select a result!!", title="Error")
@@ -63,7 +63,8 @@ class resultForm(nps.Form):
 
 class decisionForm(nps.Form):
 	def create(self):
-		self.display_choice = self.add(nps.FixedText)
+		self.display_choice = self.add(nps.TitleFixedText, name="Selected : ")
+		self.display_choice.editable = False
 		self.decision = self.add(nps.TitleSelectOne, values=['Play', 'Download'], name="Choose what to do")
 		self.add_handlers({
 			'q': quit_app})
@@ -90,6 +91,7 @@ class playerForm(nps.Form):
 			curses.KEY_LEFT: self.seek_behind
 			})
 		self.display_details = self.add(nps.TitleFixedText, name="Now Playing")
+		self.display_details.editable = False
 
 	def beforeEditing(self):
 		global player, loop
@@ -161,6 +163,7 @@ class playerForm(nps.Form):
 class downloadForm(nps.Form):
 	def create(self):
 		self.display_status = self.add(nps.TitleFixedText, name="Downloading")
+		self.display_status.editable = False
 		self.add_handlers({
 			'q': quit_app})
 
@@ -183,14 +186,12 @@ class downloadForm(nps.Form):
 		thread_dw_st.daemon = True
 		thread_dw_st.start()
 
+		self.display()
+
 	def afterEditing(self):
 		self.parentApp.setNextForm(None)
 
 class yclApp(nps.NPSAppManaged):
-	results = None
-	choice = None
-	player = None
-	loop = None
 	def onStart(self):
 		self.TITLE = "YCL - Youtube Command Line"
 		self.addForm('MAIN', searchForm, name=self.TITLE)
