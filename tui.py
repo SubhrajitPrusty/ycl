@@ -1,5 +1,6 @@
 import sys
 import curses
+import pickle
 from time import sleep
 import npyscreen as nps
 from tools.player import *
@@ -30,6 +31,8 @@ class searchForm(nps.Form):
 	def afterEditing(self):
 		nextForm = self.parentApp.getForm('RESULTS')
 		if len(self.search.value) < 1:
+			nps.notify("Enter a search query", title="Error")
+			sleep(1)
 			self.parentApp.switchForm('MAIN')
 		else:
 			self.results = search_video(self.search.value)
@@ -47,15 +50,20 @@ class resultForm(nps.Form):
 
 	def afterEditing(self):
 		nextForm = self.parentApp.getForm('DECISION')
-		self.choice = results[self.selected.get_value()[0]]
-		global choice
-		choice = self.choice
-		nextForm.display_choice.value = self.choice['title'] + " " + self.choice['url']
-		self.parentApp.switchForm('DECISION')		
+		try:
+			self.choice = results[self.selected.get_value()[0]]
+			global choice
+			choice = self.choice
+			nextForm.display_choice.value = f"Selected : {self.choice['title']} {self.choice['url']}"
+			self.parentApp.switchForm('DECISION')		
+		except Exception as e:
+			nps.notify("Select a result!!", title="Error")
+			sleep(1)
+			self.parentApp.switchForm('RESULTS')
 
 class decisionForm(nps.Form):
 	def create(self):
-		self.display_choice = self.add(nps.FixedText, name="Selected :")
+		self.display_choice = self.add(nps.FixedText)
 		self.decision = self.add(nps.TitleSelectOne, values=['Play', 'Download'], name="Choose what to do")
 		self.add_handlers({
 			'q': quit_app})
@@ -152,7 +160,28 @@ class playerForm(nps.Form):
 
 class downloadForm(nps.Form):
 	def create(self):
-		self.display_details = self.add(nps.TitleFixedText, name="Downloading")
+		self.display_status = self.add(nps.TitleFixedText, name="Downloading")
+		self.add_handlers({
+			'q': quit_app})
+
+	def update_status(self):
+		thread_dw = Thread(target=download_video, args=[choice['url'], return_hook])
+		thread_dw.daemon = True
+		thread_dw.start()
+
+		sleep(2)
+
+		while True:
+			with open("msg.pkl", "rb") as fp:
+				pkl = pickle.load(fp)
+				self.display_status.value = f"  {pkl}   "
+				self.display_status.display()
+				sleep(1)
+
+	def beforeEditing(self):
+		thread_dw_st = Thread(target=self.update_status)
+		thread_dw_st.daemon = True
+		thread_dw_st.start()
 
 	def afterEditing(self):
 		self.parentApp.setNextForm(None)
@@ -169,7 +198,6 @@ class yclApp(nps.NPSAppManaged):
 		self.addForm('DECISION', decisionForm, name=self.TITLE)
 		self.addForm('PLAYER', playerForm, name=self.TITLE)
 		self.addForm('DOWNLOADER', downloadForm, name=self.TITLE)
-
 
 def main():
 	myapp = yclApp()

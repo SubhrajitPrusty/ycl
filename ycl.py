@@ -87,7 +87,7 @@ def cli(query, playlistsearch, video, playlist):
 		if option == "Download":
 			for playlist_item in extract_playlist_data(choice['url']):
 				print(f"Downloading {playlist_item['title']}")
-				download_video(playlist_item['url'])
+				download_video(playlist_item['url'], print_hook)
 		elif option == "Play":
 			if not PLAY_SUPPORT:
 				print("Play support is not available for your system.")
@@ -99,7 +99,7 @@ def cli(query, playlistsearch, video, playlist):
 	else:
 		if option == "Download":
 				print(f"Dowloading {choice['title']}")
-				download_video(choice['url'])
+				download_video(choice['url'], print_hook)
 		elif option == "Play":
 			if not PLAY_SUPPORT:
 				print("Play support is not available for your system.")
