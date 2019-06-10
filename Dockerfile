@@ -1,10 +1,13 @@
-FROM ubuntu:latest
+FROM phusion/baseimage:0.11
 MAINTAINER Subhrajit Prusty "subhrajit1997@gmail.com"
 RUN apt update -y
-RUN apt install -y python3-pip python3-dev build-essential 
+RUN apt install -y python3.6 python3-pip python3-dev build-essential 
+RUN rm /usr/bin/python3
+RUN ln -s /usr/bin/python3.6 /usr/bin/python3
 RUN apt install -y gstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly
 ENV LANG=C.UTF-8
 ADD . /ycl
 WORKDIR /ycl
+RUN pip3 install --upgrade setuptools pip
 RUN pip3 install -e .
 CMD [ "bash" ]
