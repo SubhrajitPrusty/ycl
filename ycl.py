@@ -23,7 +23,7 @@ except Exception as e:
 @click.option("--playlistsearch", "-ps", default=False, is_flag=True, help="Searches for playlists")
 @click.option("--video", "-v", default=False, is_flag=True, help="Use a direct video link")
 @click.option("--playlist", "-pl", default=False, is_flag=True, help="Use a direct playlist link")
-@click.option("--interactive", "-i", default=False, is_flag=True, help="Starts an interactive session")
+@click.option("--interactive", "-i", default=False, is_flag=True, help="Starts an interactive Terminal UI session")
 
 def cli(query, playlistsearch, video, playlist, interactive):
 	if interactive:
