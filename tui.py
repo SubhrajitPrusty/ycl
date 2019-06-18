@@ -20,18 +20,24 @@ player = None
 loop = None
 
 def quit_app(*args, **kwargs):
-	sys.exit(2)
+	sys.exit(0) # User requested quit - i.e gracefull
+
+def notify_help(*args, **kwargs):
+	nps.notify_wait("Ctrl+h: show this help\nq: quit the app", title="Help")
 
 class searchForm(nps.Form):
 	def create(self):
 		self.search = self.add(nps.TitleText, name="Search")
+		self.helptext = self.add(nps.FixedText, editable=False, value="Press q to quit, Ctrl+h to see help", rely=-3)
 		self.add_handlers({
-			'q': quit_app})
+			'q': quit_app,
+			'^H': notify_help
+			})
 
 	def afterEditing(self):
 		nextForm = self.parentApp.getForm('RESULTS')
 		if len(self.search.value) < 1:
-			nps.notify("Enter a search query", title="Error")
+			nps.notify_wait("Enter a search query", title="Error")
 			sleep(1)
 			self.parentApp.switchForm('MAIN')
 		else:
@@ -44,8 +50,11 @@ class searchForm(nps.Form):
 class resultForm(nps.Form):
 	def create(self):
 		self.selected = self.add(nps.TitleSelectOne, name="Results")
+		self.helptext = self.add(nps.FixedText, editable=False, value="Press q to quit, Ctrl+h to see help", rely=-3)
 		self.add_handlers({
-			'q': quit_app})
+			'q': quit_app,
+			'^H': notify_help
+			})
 
 
 	def afterEditing(self):
@@ -57,7 +66,7 @@ class resultForm(nps.Form):
 			nextForm.display_choice.value = f" {self.choice['title']} {self.choice['url']} "
 			self.parentApp.switchForm('DECISION')		
 		except Exception as e:
-			nps.notify("Select a result!!", title="Error")
+			nps.notify_wait("Select a result!", title="Error")
 			sleep(1)
 			self.parentApp.switchForm('RESULTS')
 
@@ -66,8 +75,11 @@ class decisionForm(nps.Form):
 		self.display_choice = self.add(nps.TitleFixedText, name="Selected : ")
 		self.display_choice.editable = False
 		self.decision = self.add(nps.TitleSelectOne, values=['Play', 'Download'], name="Choose what to do")
+		self.helptext = self.add(nps.FixedText, editable=False, value="Press q to quit, Ctrl+h to see help", rely=-3)
 		self.add_handlers({
-			'q': quit_app})
+			'q': quit_app,
+			'^H': notify_help
+			})
 
 
 	def afterEditing(self):
@@ -87,14 +99,19 @@ class playerForm(nps.Form):
 			"p": self.toggle_pause_player,
 			"s": self.stop_player,
 			"q": self.quit_player,
-			curses.KEY_RIGHT: self.seek_ahead,
-			curses.KEY_LEFT: self.seek_behind
+			"]": self.seek_ahead,
+			"[": self.seek_behind,
+			'^H': self.notify_help_player,
+			"^R": self.display()
 			})
-		self.display_details = self.add(nps.TitleFixedText, name="Now Playing")
-		self.display_details.editable = False
+
+		self.display_name = self.add(nps.TitleFixedText, name="Now Playing", editable=False)
+		self.display_time = self.add(nps.FixedText, editable=False)
+		self.helptext = self.add(nps.FixedText, editable=False, value="Press q to quit, Ctrl+h to see help", rely=-3)
 
 	def beforeEditing(self):
 		global player, loop
+		self.display_name.value = choice['title']
 		self.player = player 
 		self.loop = loop
 		self.player.set_state(Gst.State.PLAYING)
@@ -110,6 +127,17 @@ class playerForm(nps.Form):
 	def afterEditing(self):
 		self.stop_player()
 		self.parentApp.setNextForm(None)
+	
+	def notify_help_player(self, *args, **kwargs):
+		helptext = """
+		Ctrl+h: show this help
+		q: quit the app
+		p: toggle pause
+		s: stop player and exit
+		]: seek forward 10 seconds
+		]: seek backward 10 seconds
+		"""
+		nps.notify_wait(helptext, title="Help")
 
 	def get_player_pos(self):
 		rc, pos_int = self.player.query_position(Gst.Format.TIME)
@@ -122,12 +150,12 @@ class playerForm(nps.Form):
 		mins_tot = seconds_tot // 60
 		secs_tot = seconds_tot % 60
 
-		return "{}\n{}:{}/{}:{}".format(choice['title'], mins_curr, secs_curr, mins_tot, secs_tot)
+		return "{:02d}:{:02d}/{:02d}:{:02d}".format(mins_curr, secs_curr, mins_tot, secs_tot)
 
 	def update_pos(self):
 		while True:
-			self.display_details.value = self.get_player_pos()
-			self.display_details.display()
+			self.display_time.value = self.get_player_pos()
+			self.display_time.display()
 			sleep(1)
 
 	def toggle_pause_player(self, *args, **kwargs):
@@ -164,8 +192,11 @@ class downloadForm(nps.Form):
 	def create(self):
 		self.display_status = self.add(nps.TitleFixedText, name="Downloading")
 		self.display_status.editable = False
+		self.helptext = self.add(nps.FixedText, editable=False, value="Press q to quit, Ctrl+h to see help", rely=-3)
 		self.add_handlers({
-			'q': quit_app})
+			'q': quit_app,
+			'^H': notify_help
+			})
 
 	def update_status(self):
 		thread_dw = Thread(target=download_video, args=[choice['url'], return_hook])
@@ -175,7 +206,7 @@ class downloadForm(nps.Form):
 		sleep(2)
 
 		while True:
-			with open("msg.pkl", "rb") as fp:
+			with open("/tmp/msg.pkl", "rb") as fp:
 				pkl = pickle.load(fp)
 				self.display_status.value = f"  {pkl}   "
 				self.display_status.display()

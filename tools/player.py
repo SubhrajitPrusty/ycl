@@ -66,11 +66,14 @@ def play_audio(url):
 	control = " "
 	player.set_state(Gst.State.PLAYING)
 	state = "Playing"
+	print()
 	
 	while True:
+		print("\x1B[1A\x1B[2K", end="")
 		control = input(f"{state}: STOP/PLAY-PAUSE/FF/RR/QUIT (s/p/l/j/q) : ")
 		
 		if control.lower() == "s" or control.lower() == "":
+			print("Stopping player...")
 			player.set_state(Gst.State.NULL)
 			loop.quit()
 			break
@@ -87,6 +90,7 @@ def play_audio(url):
 		elif control.lower() == 'j':
 			rewind_callback(player)
 		elif control.lower() == 'q':
+			print("Quitting...")
 			player.set_state(Gst.State.NULL)
 			loop.quit()
 			sys.exit(0)		

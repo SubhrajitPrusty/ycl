@@ -192,7 +192,8 @@ def print_hook(d):
 			msg = f"Downloaded: {percent_str} Unknown of Unknown.\
 			  Elapsed: {str(round(elapsed,2)).rjust(5)}s Speed: Unknown/s "
 
-	print(msg, end="\r", flush=True)
+	print(msg)
+	print("\x1B[F\x1B[K", end="")
 
 def return_hook(d):
 	if d['status'] == 'finished':
@@ -211,7 +212,7 @@ def return_hook(d):
 			msg = f"Downloaded: {percent_str} Unknown of Unknown.\
 			  Elapsed: {str(round(elapsed,2)).rjust(5)}s Speed: Unknown/s "
 
-	with open("msg.pkl", "wb") as fp:
+	with open("/tmp/msg.pkl", "wb+") as fp:
 		pickle.dump(msg, fp)
 
 def speed_conv(b):
@@ -241,6 +242,7 @@ def download_video(url, hook):
 	try:
 		with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
 			ydl.download([url])
+		print()
 	except Exception as e:
 		print("Error :", e)
 	
