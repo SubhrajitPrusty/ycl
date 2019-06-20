@@ -1,5 +1,6 @@
 import gi
 import sys
+import curses
 import threading
 from .youtube import *
 
@@ -21,6 +22,19 @@ def forward_callback(player):
 	rc, pos_int = player.query_position(Gst.Format.TIME)
 	seek_ns = pos_int + 10 * 1000000000
 	player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, seek_ns)
+
+def get_player_pos(player):
+	rc, pos_int = player.query_position(Gst.Format.TIME)
+	rc, dur_nano = player.query_duration(Gst.Format.TIME)
+	seconds_curr = pos_int // 10**9
+	mins_curr = seconds_curr // 60
+	secs_curr= seconds_curr % 60
+
+	seconds_tot = dur_nano // 10**9
+	mins_tot = seconds_tot // 60
+	secs_tot = seconds_tot % 60
+
+	return "{:02d}:{:02d}/{:02d}:{:02d}".format(mins_curr, secs_curr, mins_tot, secs_tot)
 
 def create_player(url):
 	music_stream_uri = extract_audio_url(url)[0]
@@ -57,43 +71,62 @@ def create_player(url):
 	return player, loop
 
 
-def play_audio(url):
+def play_audio(url, title=None):
 	player, loop = create_player(url)
 	
 	threading.Thread(target=loop.run).start()
+
+	stdscr = curses.initscr()
+	curses.cbreak()
+	curses.noecho()
+	stdscr.clear()
+	stdscr.keypad(True)
+	stdscr.nodelay(1)
 
 	# Let user stop player gracefully
 	control = " "
 	player.set_state(Gst.State.PLAYING)
 	state = "Playing"
-	print()
 	
-	while True:
-		print("\x1B[1A\x1B[2K", end="")
-		control = input(f"{state}: STOP/PLAY-PAUSE/FF/RR/QUIT (s/p/l/j/q) : ")
-		
-		if control.lower() == "s" or control.lower() == "":
-			print("Stopping player...")
-			player.set_state(Gst.State.NULL)
-			loop.quit()
-			break
+	if title:
+		stdscr.addstr(0, 0, f"Playing {title}")
+	
+	try:
+		while True:
+			pos = get_player_pos(player)
+			stdscr.addstr(1, 0, f"{state}: {pos} ") 
+			stdscr.addstr(2, 0, str("_"*(curses.COLS//2)))
+			stdscr.addstr(3, 0, "Controls")
+			stdscr.addstr(4, 0, "s: STOP")
+			stdscr.addstr(5, 0, "p: Toggle PLAY/PAUSE")
+			stdscr.addstr(6, 0, "]: Seek 10 seconds forward")
+			stdscr.addstr(7, 0, "[: Seek 10 seconds backward")
+			stdscr.addstr(8, 0, "q: Quit")
 
-		elif control.lower() == "p":
-			if state == "Playing":
-				player.set_state(Gst.State.PAUSED)
-				state = "Paused"
-			else:
-				player.set_state(Gst.State.PLAYING)
-				state = "Playing"
-		elif control.lower() == 'l':
-			forward_callback(player)
-		elif control.lower() == 'j':
-			rewind_callback(player)
-		elif control.lower() == 'q':
-			print("Quitting...")
-			player.set_state(Gst.State.NULL)
-			loop.quit()
-			sys.exit(0)		
-		
+			control = stdscr.getch()
 
+			if control == ord("s"):
+				player.set_state(Gst.State.NULL)
+				loop.quit()
+				break
 
+			elif control == ord("p"):
+				if state == "Playing":
+					player.set_state(Gst.State.PAUSED)
+					state = "Paused"
+				else:
+					player.set_state(Gst.State.PLAYING)
+					state = "Playing"
+			elif control == ord(']'):
+				forward_callback(player)
+			elif control == ord('['):
+				rewind_callback(player)
+			elif control == ord('q'):
+				player.set_state(Gst.State.NULL)
+				loop.quit()
+				curses.endwin()
+				print("Quitting...\n")
+				sys.exit(0)
+	finally:
+		curses.endwin()
+		print("\rStopping player...", end="")
