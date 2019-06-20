@@ -99,8 +99,8 @@ def cli(query, playlistsearch, video, playlist, interactive):
 					sys.exit(2)
 				else:
 					for playlist_item in extract_playlist_data(choice['url']):
-						print(f"Playing {playlist_item['title']}")
-						play_audio(playlist_item['url'])
+						# print(f"Playing {playlist_item['title']}")
+						play_audio(playlist_item['url'], playlist_item['title'])
 		else:
 			if option == "Download":
 					print(f"Dowloading {choice['title']}")
@@ -110,8 +110,8 @@ def cli(query, playlistsearch, video, playlist, interactive):
 					print("Play support is not available for your system.")
 					sys.exit(2)
 				else:
-					print(f"Playing {choice['title']}")
-					play_audio(choice['url'])
+					# print(f"Playing {choice['title']}")
+					play_audio(choice['url'], choice['title'])
 
 
 if __name__ == '__main__':
