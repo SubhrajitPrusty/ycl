@@ -189,9 +189,6 @@ class Picker(object):
         curses.use_default_colors()
         # hide the cursor
         curses.curs_set(0)
-        #add some color for multi_select
-        #@todo make colors configurable
-        curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_WHITE)
 
     def _start(self, screen):
         self.screen = screen

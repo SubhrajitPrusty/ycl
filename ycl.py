@@ -18,6 +18,9 @@ try:
 except Exception as e:
 	PLAY_SUPPORT=False
 
+def quit_pick(picker):
+	sys.exit(0)
+
 @click.command()
 @click.argument("query", nargs=-1)
 @click.option("--playlistsearch", "-ps", default=False, is_flag=True, help="Searches for playlists")

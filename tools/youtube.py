@@ -245,10 +245,9 @@ def download_video(url, hook):
 		print()
 	except Exception as e:
 		print("Error :", e)
+	except KeyboardInterrupt:
+		print("Quitting.")
 	
-
-def quit_pick(picker):
-	sys.exit(0)
 
 def extract_audio_url(yt_url):
 	YDL_OPTS = {
