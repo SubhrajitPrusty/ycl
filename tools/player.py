@@ -95,13 +95,13 @@ def play_audio(url, title=None):
 		while True:
 			pos = get_player_pos(player)
 			stdscr.addstr(1, 0, f"{state}: {pos} ") 
-			stdscr.addstr(2, 0, str("_"*(curses.COLS//2)))
-			stdscr.addstr(3, 0, "Controls")
-			stdscr.addstr(4, 0, "s: STOP")
-			stdscr.addstr(5, 0, "p: Toggle PLAY/PAUSE")
-			stdscr.addstr(6, 0, "]: Seek 10 seconds forward")
-			stdscr.addstr(7, 0, "[: Seek 10 seconds backward")
-			stdscr.addstr(8, 0, "q: Quit")
+			stdscr.hline(2, 0, curses.ACS_HLINE, int(curses.COLS))
+			stdscr.addstr(4, 0, "Controls : ")
+			stdscr.addstr(5, 0, "s: STOP")
+			stdscr.addstr(6, 0, "p: Toggle PLAY/PAUSE")
+			stdscr.addstr(7, 0, "->: Seek 10 seconds forward")
+			stdscr.addstr(8, 0, "<-: Seek 10 seconds backward")
+			stdscr.addstr(9, 0, "q: Quit")
 
 			control = stdscr.getch()
 
@@ -117,9 +117,9 @@ def play_audio(url, title=None):
 				else:
 					player.set_state(Gst.State.PLAYING)
 					state = "Playing"
-			elif control == ord(']'):
+			elif control == curses.KEY_RIGHT:
 				forward_callback(player)
-			elif control == ord('['):
+			elif control == curses.KEY_LEFT:
 				rewind_callback(player)
 			elif control == ord('q'):
 				player.set_state(Gst.State.NULL)

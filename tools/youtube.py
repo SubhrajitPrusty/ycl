@@ -226,7 +226,7 @@ def speed_conv(b):
 def download_video(url, hook):
 
 	msg = f"Downloading {url}"
-	with open("msg.pkl", "wb") as fp:
+	with open("/tmp/msg.pkl", "wb+") as fp:
 		pickle.dump(msg, fp)
 
 	YDL_OPTS = {
