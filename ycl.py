@@ -1,20 +1,14 @@
 import os
 import sys
-import tui
 import click
-from tools.player import *
 from tools.youtube import *
 from pick import Picker
 
 PLAY_SUPPORT=True
 
 try:
-	import gi
-	gi.require_version('Gst', '1.0')
-	gi.require_version('GstBase', '1.0')
-	from gi.repository import GObject, Gst
-	GObject.threads_init()
-	Gst.init(None)
+	import tui
+	from tools.player import *
 except Exception as e:
 	PLAY_SUPPORT=False
 
@@ -106,7 +100,7 @@ def cli(query, playlistsearch, video, playlist, interactive):
 						play_audio(playlist_item['url'], playlist_item['title'])
 		else:
 			if option == "Download":
-					print(f"Dowloading {choice['title']}")
+					print(f"Downloading {choice['title']}")
 					download_video(choice['url'], print_hook)
 			elif option == "Play":
 				if not PLAY_SUPPORT:
