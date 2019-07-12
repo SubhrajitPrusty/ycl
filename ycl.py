@@ -100,8 +100,8 @@ def cli(query, playlistsearch, video, playlist, interactive):
 						play_audio(playlist_item['url'], playlist_item['title'])
 		else:
 			if option == "Download":
-					print(f"Downloading {choice['title']}")
-					download_video(choice['url'], print_hook)
+				print(f"Downloading {choice['title']}")
+				download_video(choice['url'], print_hook)
 			elif option == "Play":
 				if not PLAY_SUPPORT:
 					print("Play support is not available for your system.")

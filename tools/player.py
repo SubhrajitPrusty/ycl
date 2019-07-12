@@ -125,7 +125,7 @@ def play_audio(url, title=None):
 				player.set_state(Gst.State.NULL)
 				loop.quit()
 				curses.endwin()
-				print("Quitting...\n")
+				print("Quitting...\n\n")
 				sys.exit(0)
 			elif pos == dur:
 				if pos != 0:
@@ -133,4 +133,4 @@ def play_audio(url, title=None):
 					break
 	finally:
 		curses.endwin()
-		print("\rStopping player...", end="")
+		print("\rStopping player...")

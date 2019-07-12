@@ -194,8 +194,10 @@ def main():
 		curses.endwin()
 		if playlist:
 			for video in extract_playlist_data(choice['url']):
+				print(f"Downloading {video['title']}")
 				download_video(video['url'], print_hook)
 		else:
+			print(f"Downloading {choice['title']}")
 			download_video(choice['url'], print_hook)
 
 	sleep(2)

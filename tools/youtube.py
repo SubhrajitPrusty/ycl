@@ -243,7 +243,7 @@ def download_video(url, hook):
 	try:
 		with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
 			ydl.download([url])
-		print()
+		#print()
 	except Exception as e:
 		print("Error :", e)
 	except KeyboardInterrupt:
