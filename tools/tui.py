@@ -130,13 +130,24 @@ def main():
 	except KeyboardInterrupt:
 		scr.quit()
 			
+	playlist = scr.take_input(2, 2, "Search for playlists? (Y/N) : ")
 	scr.reset()
 	curses.curs_set(0)
 	try:
-		results = search_video(query)
+		if playlist.strip().lower() == 'y':
+			results = search_pl(query)
+			playlist = True
+		else:
+			results = search_video(query)
+
 	except Exception as e:
 		scr.draw(2, 2, f"Oops! Make sure you are connected to the internet", curses.color_pair(2))
 		sleep(2)
+		scr.quit()
+	
+	if len(results) < 1:
+		scr.draw(2, 2, "No results found!", curses.color_pair(2))
+		sleep(5)
 		scr.quit()
 
 	# Pick results
@@ -159,7 +170,12 @@ def main():
 	# Perform action
 	if index == 0:
 		try:
-			play_audio(scr, choice['url'], choice['title'])
+			if playlist:
+				for video in extract_playlist_data(choice['url']):
+					scr.reset()
+					play_audio(scr, video['url'], video['title'])
+			else:
+				play_audio(scr, choice['url'], choice['title'])
 		except Exception as e:
 			scr.draw(2, 2, f"Oops! Check your internet connection", curses.color_pair(2))
 			sleep(2)
@@ -167,7 +183,11 @@ def main():
 
 	else:
 		curses.endwin()
-		download_video(choice['url'], print_hook)
+		if playlist:
+			for video in extract_playlist_data(choice['url']):
+				download_video(video['url'], print_hook)
+		else:
+			download_video(choice['url'], print_hook)
 
 	sleep(2)
 	scr.quit()
