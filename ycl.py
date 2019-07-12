@@ -7,7 +7,7 @@ from pick import Picker
 PLAY_SUPPORT=True
 
 try:
-	import tui
+	from tools import tui
 	from tools.player import *
 except Exception as e:
 	PLAY_SUPPORT=False
