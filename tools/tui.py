@@ -130,15 +130,20 @@ def main():
 	except KeyboardInterrupt:
 		scr.quit()
 			
-	playlist = scr.take_input(2, 2, "Search for playlists? (Y/N) : ")
+	title = f"Search for playlists? : (q to quit)"
+	options = ["Yes", "No"]
+	picker = Picker(options, title, indicator="=>")
+	picker.register_custom_handler(ord('q'), scr.quit)
+	option, index = picker._start(scr.stdscr)
 	scr.reset()
 	curses.curs_set(0)
 	try:
-		if playlist.strip().lower() == 'y':
+		if index == 0:
 			results = search_pl(query)
 			playlist = True
 		else:
 			results = search_video(query)
+			playlist = False
 
 	except Exception as e:
 		scr.draw(2, 2, f"Oops! Make sure you are connected to the internet", curses.color_pair(2))
