@@ -79,14 +79,14 @@ def play_audio(screen, url, title=None):
 	while True:
 		stdscr.refresh()
 		pos = get_player_pos(player)
-		stdscr.addstr(3, 2, f"{state} : {pos} ", curses.color_pair(1))
-		stdscr.hline(4, 2, curses.ACS_HLINE, curses.COLS-4)
-		stdscr.addstr(6, 2, "Controls : ", curses.color_pair(3))
-		stdscr.addstr(7, 2, "s: STOP", curses.color_pair(3))
-		stdscr.addstr(8, 2, "p: Toggle PLAY/PAUSE", curses.color_pair(3))
-		stdscr.addstr(9, 2, "->: Seek 10 seconds forward", curses.color_pair(3))
-		stdscr.addstr(10, 2, "<-: Seek 10 seconds backward", curses.color_pair(3))
-		stdscr.addstr(11, 2, "q: Quit", curses.color_pair(3))
+		stdscr.addstr(3,  2, f"{state} : {pos} ", curses.color_pair(1))
+		stdscr.hline(4,  2, curses.ACS_HLINE, curses.COLS-4)
+		stdscr.addstr(6,  2,  "CONTROLS : ", curses.color_pair(3) | curses.A_BOLD)
+		stdscr.addstr(7,  2,  "s   : STOP (Start next song in playlist) ", curses.color_pair(3))
+		stdscr.addstr(8,  2,  "p   : Toggle PLAY/PAUSE ", curses.color_pair(3))
+		stdscr.addstr(9,  2,  "->  : Seek 10 seconds forward ", curses.color_pair(3))
+		stdscr.addstr(10, 2, "<-  : Seek 10 seconds backward ", curses.color_pair(3))
+		stdscr.addstr(11, 2, "q   : Quit ", curses.color_pair(3))
 
 
 		control = stdscr.getch()
