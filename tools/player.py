@@ -25,16 +25,16 @@ def forward_callback(player):
 
 def get_player_pos(player):
 	rc, pos_int = player.query_position(Gst.Format.TIME)
-	rc, dur_nano = player.query_duration(Gst.Format.TIME)
+	rc, dur_int= player.query_duration(Gst.Format.TIME)
 	seconds_curr = pos_int // 10**9
 	mins_curr = seconds_curr // 60
 	secs_curr= seconds_curr % 60
 
-	seconds_tot = dur_nano // 10**9
+	seconds_tot = dur_int// 10**9
 	mins_tot = seconds_tot // 60
 	secs_tot = seconds_tot % 60
 
-	return "{:02d}:{:02d}/{:02d}:{:02d}".format(mins_curr, secs_curr, mins_tot, secs_tot)
+	return "{:02d}:{:02d}/{:02d}:{:02d}".format(mins_curr, secs_curr, mins_tot, secs_tot), seconds_curr, seconds_tot
 
 def create_player(url):
 	music_stream_uri = extract_audio_url(url)[0]
@@ -93,15 +93,15 @@ def play_audio(url, title=None):
 	
 	try:
 		while True:
-			pos = get_player_pos(player)
-			stdscr.addstr(1, 0, f"{state}: {pos} ") 
+			pos_str, pos, dur = get_player_pos(player)
+			stdscr.addstr(1, 0, f"{state}: {pos_str}") 
 			stdscr.hline(2, 0, curses.ACS_HLINE, int(curses.COLS))
-			stdscr.addstr(4, 0, "Controls : ")
-			stdscr.addstr(5, 0, "s: STOP")
-			stdscr.addstr(6, 0, "p: Toggle PLAY/PAUSE")
-			stdscr.addstr(7, 0, "->: Seek 10 seconds forward")
-			stdscr.addstr(8, 0, "<-: Seek 10 seconds backward")
-			stdscr.addstr(9, 0, "q: Quit")
+			stdscr.addstr(4, 0, "CONTROLS : ")
+			stdscr.addstr(5, 0, "s  : STOP (Start next song in playlist)")
+			stdscr.addstr(6, 0, "p  : Toggle PLAY/PAUSE")
+			stdscr.addstr(7, 0, "-> : Seek 10 seconds forward")
+			stdscr.addstr(8, 0, "<- : Seek 10 seconds backward")
+			stdscr.addstr(9, 0, "q  : Quit")
 
 			control = stdscr.getch()
 
@@ -127,6 +127,10 @@ def play_audio(url, title=None):
 				curses.endwin()
 				print("Quitting...\n")
 				sys.exit(0)
+			elif pos == dur:
+				if pos != 0:
+					loop.quit()
+					break
 	finally:
 		curses.endwin()
 		print("\rStopping player...", end="")
