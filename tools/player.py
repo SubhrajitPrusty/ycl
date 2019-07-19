@@ -128,7 +128,8 @@ def play_audio(url, title=None):
 				print("Quitting...\n\n")
 				sys.exit(0)
 			elif pos == dur:
-				if pos != 0:
+				sleep(1)
+				if pos > 0:
 					loop.quit()
 					break
 	finally:
