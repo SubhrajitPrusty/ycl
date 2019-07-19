@@ -114,7 +114,8 @@ def play_audio(screen, url, title=None):
 			screen.quit()
 			sys.exit(0)
 		elif pos == dur:
-			if pos != 0:
+			sleep(1)
+			if pos > 0:
 				loop.quit()
 				break
 
