@@ -3,6 +3,7 @@ import sys
 import curses
 import threading
 from .youtube import *
+from time import sleep
 
 gi.require_version('Gst', '1.0')
 gi.require_version('GstBase', '1.0')
@@ -97,11 +98,11 @@ def play_audio(url, title=None):
 			stdscr.addstr(1, 0, f"{state}: {pos_str}") 
 			stdscr.hline(2, 0, curses.ACS_HLINE, int(curses.COLS))
 			stdscr.addstr(4, 0, "CONTROLS : ")
-			stdscr.addstr(5, 0, "s  : STOP (Start next song in playlist)")
-			stdscr.addstr(6, 0, "p  : Toggle PLAY/PAUSE")
-			stdscr.addstr(7, 0, "-> : Seek 10 seconds forward")
-			stdscr.addstr(8, 0, "<- : Seek 10 seconds backward")
-			stdscr.addstr(9, 0, "q  : Quit")
+			stdscr.addstr(5, 0, "s  	: STOP (Start next song in playlist)")
+			stdscr.addstr(6, 0, "SPACE	: Toggle PLAY/PAUSE")
+			stdscr.addstr(7, 0, "-> 	: Seek 10 seconds forward")
+			stdscr.addstr(8, 0, "<- 	: Seek 10 seconds backward")
+			stdscr.addstr(9, 0, "q  	: Quit")
 
 			control = stdscr.getch()
 
@@ -110,7 +111,7 @@ def play_audio(url, title=None):
 				loop.quit()
 				break
 
-			elif control == ord("p"):
+			elif control == ord(" "):
 				if state == "Playing":
 					player.set_state(Gst.State.PAUSED)
 					state = "Paused"
