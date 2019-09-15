@@ -141,27 +141,32 @@ def extract_playlist_data(url):
 	totalItems = []
 
 	totalResults = r.json()['pageInfo']['totalResults']
+	nextPageToken = r.json().get('nextPageToken')
 
-	if items:
-		totalItems += items
-		while len(totalItems) < totalResults:
-			nextPageToken = r.json()['nextPageToken']
-			PAYLOAD['pageToken'] = nextPageToken
-			r = requests.get(BASE_URL+"/playlistItems", params=PAYLOAD)
-			items = r.json().get('items')
+	try:
+		if items:
 			totalItems += items
+			while nextPageToken != None:
+				PAYLOAD['pageToken'] = nextPageToken
+				r = requests.get(BASE_URL+"/playlistItems", params=PAYLOAD)
+				items = r.json().get('items')
+				totalItems += items
+				nextPageToken = r.json().get('nextPageToken')
 
-		for x in totalItems:
-			snippet = x.get("snippet")
-			videoId = snippet.get("resourceId").get("videoId")
-			playlistItems.append({ "url" : "https://youtube.com/watch?v=" + videoId,
-									"id" : videoId,
-									"title" : snippet.get("title"),
-				})
-	else:
-		# print(r.json())
-		print("Couldn't get playlist details. Try again")
-		sys.exit(2)
+			for x in totalItems:
+				snippet = x.get("snippet")
+				videoId = snippet.get("resourceId").get("videoId")
+				playlistItems.append({ "url" : "https://youtube.com/watch?v=" + videoId,
+										"id" : videoId,
+										"title" : snippet.get("title"),
+					})
+				
+		else:
+			# print(r.json())
+			print("Couldn't get playlist details. Try again")
+			sys.exit(2)
+	except Exception as e:
+		print(f"Exception {e}")
 
 	return playlistItems
 
@@ -248,6 +253,7 @@ def download_video(url, hook):
 		print("Error :", e)
 	except KeyboardInterrupt:
 		print("Quitting.")
+		sys.exit(1)
 	
 
 def extract_audio_url(yt_url):
