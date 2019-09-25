@@ -1,13 +1,10 @@
-FROM phusion/baseimage:0.11
-MAINTAINER Subhrajit Prusty "subhrajit1997@gmail.com"
-RUN apt update -y
-RUN apt install -y python3.6 python3-pip python3-dev build-essential 
-RUN rm /usr/bin/python3
-RUN ln -s /usr/bin/python3.6 /usr/bin/python3
-RUN apt install -y gstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly
+FROM python:3.7-slim
+RUN apt update && \
+    apt install -y gstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+    libgirepository1.0-dev gcc libcairo2-dev pkg-config python3-dev gir1.2-gtk-3.0 && \
+    rm -rf /var/lib/apt/lists/*
 ENV LANG=C.UTF-8
 ADD . /ycl
 WORKDIR /ycl
-RUN pip3 install --upgrade setuptools pip
-RUN pip3 install -e .
-CMD [ "bash" ]
+RUN pip install --no-cache-dir -e .
+CMD [ "/bin/bash" ]
