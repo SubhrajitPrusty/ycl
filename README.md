@@ -7,12 +7,15 @@ Search, Play, Download Youtube videos from the terminal
 * Requires Gstreamer and its plugins
 
 ```bash
-sudo apt install gstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly
+sudo apt install gstreamer1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+  libgirepository1.0-dev gcc libcairo2-dev pkg-config python3-dev gir1.2-gtk-3.0 
 ```
 
 ## Install
 
 ```
+pip3 install pycairo
+pip3 install PyGobject
 pip3 install -e .
 ```
 
