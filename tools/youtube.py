@@ -44,16 +44,22 @@ def isValidURL(url, urlType="video"):
 
 			r = requests.get(BASE_URL+"/playlists", params=PAYLOAD)
 
+		# print(r.reason)
 		found = r.json()['pageInfo']['totalResults']
 
 		if found:
 			details = r.json().get('items').pop()
 			return True, details
 	except Exception as e:
-		pass
+		err_name = type(e).__name__
+		if err_name == "ConnectionError":
+			print("Check your internet connection.")
+			exit(1)
+		else:
+			print(f"ERROR: {type(e).__name__}")
+			exit(1)
 	
 	return False, None
-
 
 def search_video(query):
 	"""
