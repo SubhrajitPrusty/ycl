@@ -4,6 +4,8 @@ from .youtube import *
 from time import sleep
 from ffpyplayer.player import MediaPlayer
 
+LOOP=True
+
 def rewind_callback(player):
 	player.seek(0,relative=False)
 		
@@ -12,7 +14,7 @@ def forward_callback(player):
 
 def get_player_pos(player):
 	pos_int = player.get_pts()
-	dur_int= player.get_metadata()
+	dur_int= player.get_metadata()['duration']
 	seconds_curr = pos_int 
 	mins_curr = seconds_curr // 60
 	secs_curr= seconds_curr % 60
@@ -89,11 +91,13 @@ def play_audio(url, title=None):
 				curses.endwin()
 				print("Quitting...\n\n")
 				sys.exit(0)
-			elif pos == dur:
+			elif pos >= dur-1:
 				sleep(1)
-				if pos > 0:
-					loop.quit()
-					break
+				if LOOP:
+					rewind_callback()
+				else:
+					player.close_player()
+					break				
 	finally:
 		curses.endwin()
 		print("\rStopping player...")
