@@ -1,37 +1,24 @@
-import gi
 import sys
 import curses
 import threading
 from .youtube import *
 from time import sleep
-
-gi.require_version('Gst', '1.0')
-gi.require_version('GstBase', '1.0')
-from gi.repository import GObject, Gst
-GObject.threads_init()
-Gst.init(None)
-
+from ffpyplayer.player import MediaPlayer
 
 def rewind_callback(player):
-	rc, pos_int = player.query_position(Gst.Format.TIME)
-	seek_ns = pos_int - 10 * 1000000000
-	if seek_ns < 0:
-		seek_ns = 0
-	player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, seek_ns)
+	player.seek(0,relative=False)
 		
 def forward_callback(player):
-	rc, pos_int = player.query_position(Gst.Format.TIME)
-	seek_ns = pos_int + 10 * 1000000000
-	player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH, seek_ns)
+	player.seek(10.0)
 
 def get_player_pos(player):
-	rc, pos_int = player.query_position(Gst.Format.TIME)
-	rc, dur_int= player.query_duration(Gst.Format.TIME)
-	seconds_curr = pos_int // 10**9
+	pos_int = player.get_pts()
+	dur_int= player.get_metadata()
+	seconds_curr = pos_int 
 	mins_curr = seconds_curr // 60
 	secs_curr= seconds_curr % 60
 
-	seconds_tot = dur_int// 10**9
+	seconds_tot = dur_int
 	mins_tot = seconds_tot // 60
 	secs_tot = seconds_tot % 60
 
@@ -44,38 +31,13 @@ def create_player(url):
 		print("Failed to create player")
 		sys.exit(1)
 	
-	# Create a custom bin element, that will serve as audio sink to
-	# player bin. Audio filters will be added to this sink.
-	audio_sink = Gst.Bin.new('audiosink')
+	ff_opts={"no-disp":True}
+	player = MediaPlayer(filename, ff_opts=ff_opts)
 	
-	# Create element to attenuate/amplify the signal
-	amplify = Gst.ElementFactory.make('audioamplify')
-	amplify.set_property('amplification', 1)
-	audio_sink.add(amplify)
-
-	# Create element to play the pipeline to hardware
-	sink = Gst.ElementFactory.make('autoaudiosink')
-	audio_sink.add(sink)
-
-	amplify.link(sink)
-	audio_sink.add_pad(Gst.GhostPad.new('sink', amplify.get_static_pad('sink')))
-
-	# Create playbin and add the custom audio sink to it
-	player = Gst.ElementFactory.make("playbin", "player")
-	player.props.audio_sink = audio_sink
-
-	#set the uri
-	player.set_property('uri', music_stream_uri)
-
-	loop = GObject.MainLoop()
-
-	return player, loop
+	return player
 
 
 def play_audio(url, title=None):
-	player, loop = create_player(url)
-	
-	threading.Thread(target=loop.run).start()
 
 	stdscr = curses.initscr()
 	curses.cbreak()
@@ -86,7 +48,7 @@ def play_audio(url, title=None):
 
 	# Let user stop player gracefully
 	control = " "
-	player.set_state(Gst.State.PLAYING)
+	player = create_player(url)
 	state = "Playing"
 	
 	if title:
@@ -107,24 +69,24 @@ def play_audio(url, title=None):
 			control = stdscr.getch()
 
 			if control == ord("s"):
-				player.set_state(Gst.State.NULL)
-				loop.quit()
+				player.set_pause(True)
+				player.close_player()
 				break
 
 			elif control == ord(" "):
 				if state == "Playing":
-					player.set_state(Gst.State.PAUSED)
+					player.set_pause(True)
 					state = "Paused"
 				else:
-					player.set_state(Gst.State.PLAYING)
+					player.set_pause(False)
 					state = "Playing"
 			elif control == curses.KEY_RIGHT:
 				forward_callback(player)
 			elif control == curses.KEY_LEFT:
 				rewind_callback(player)
 			elif control == ord('q'):
-				player.set_state(Gst.State.NULL)
-				loop.quit()
+				player.set_pause(True)
+				player.close_player()
 				curses.endwin()
 				print("Quitting...\n\n")
 				sys.exit(0)
