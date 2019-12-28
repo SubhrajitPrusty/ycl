@@ -1,6 +1,5 @@
 import sys
 import curses
-import threading
 from .youtube import *
 from time import sleep
 from ffpyplayer.player import MediaPlayer
@@ -32,7 +31,7 @@ def create_player(url):
 		sys.exit(1)
 	
 	ff_opts={"no-disp":True}
-	player = MediaPlayer(filename, ff_opts=ff_opts)
+	player = MediaPlayer(music_stream_uri, ff_opts=ff_opts)
 	
 	return player
 
