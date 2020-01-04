@@ -5,14 +5,9 @@ from time import sleep
 from tools.pick import Picker
 from tools.player import *
 from tools.youtube import *
-from threading import Thread
 
-import gi
-gi.require_version('Gst', '1.0')
-gi.require_version('GstBase', '1.0')
-from gi.repository import GObject, Gst
-GObject.threads_init()
-Gst.init(None)
+
+
 
 class Window(object):
 	def __init__(self):
@@ -60,17 +55,13 @@ class Window(object):
 		curses.endwin()
 		sys.exit(0)
 
+LOOP=True
 def play_audio(screen, url, title=None):
 	stdscr = screen.stdscr
 	stdscr.nodelay(1)
-	player, loop = create_player(url)
-	
-	player_thread = threading.Thread(target=loop.run)
-	player_thread.daemon = True
-	player_thread.start()
+	player = create_player(url)
 
 	control = " "
-	player.set_state(Gst.State.PLAYING)
 	state = "Playing"
 	
 	if title:
@@ -82,42 +73,52 @@ def play_audio(screen, url, title=None):
 		stdscr.addstr(3,  2, f"{state} : {pos_str} ", curses.color_pair(1))
 		stdscr.hline(4,  2, curses.ACS_HLINE, curses.COLS-4)
 		stdscr.addstr(6,  2, "CONTROLS : ", curses.color_pair(3) | curses.A_BOLD)
-		stdscr.addstr(7,  2, "s   			: STOP (Start next song in playlist) ", curses.color_pair(3))
-		stdscr.addstr(8,  2, "SPACE 		: Toggle PLAY/PAUSE ", curses.color_pair(3))
-		stdscr.addstr(9,  2, "->  			: Seek 10 seconds forward ", curses.color_pair(3))
-		stdscr.addstr(10, 2, "<-  			: Seek 10 seconds backward ", curses.color_pair(3))
-		stdscr.addstr(11, 2, "q   			: Quit ", curses.color_pair(3))
+		stdscr.addstr(7,  2, "s             : STOP (Start next song in playlist) ", curses.color_pair(3))
+		stdscr.addstr(8,  2, "SPACE         : Toggle PLAY/PAUSE ", curses.color_pair(3))
+		stdscr.addstr(9,  2, "->            : Seek 10 seconds forward ", curses.color_pair(3))
+		stdscr.addstr(10, 2, "<-            : Seek 10 seconds backward ", curses.color_pair(3))
+		stdscr.addstr(11, 2, "↑             : Increase Volume", curses.color_pair(3))
+		stdscr.addstr(12, 2, "↓             : Decrease Volume", curses.color_pair(3))
+		stdscr.addstr(13, 2, "q             : Quit ", curses.color_pair(3))
 
 
 		control = stdscr.getch()
 
 		if control == ord("s"):
-			player.set_state(Gst.State.NULL)
-			loop.quit()
+			player.set_pause(True)
+			player.close_player()
 			state = "Stopped"
 			stdscr.refresh()
 			break
 		elif control == ord(" "):
 			if state == "Playing":
-				player.set_state(Gst.State.PAUSED)
+				player.set_pause(True)
 				state = "Paused"
 			else:
-				player.set_state(Gst.State.PLAYING)
+				player.set_pause(False)
 				state = "Playing"
 		elif control == curses.KEY_RIGHT:
 			forward_callback(player)
 		elif control == curses.KEY_LEFT:
 			rewind_callback(player)
+		elif control == curses.KEY_UP:
+			increase_volume(player)
+		elif control == curses.KEY_DOWN:
+			decrease_volume(player)
 		elif control == ord('q'):
-			player.set_state(Gst.State.NULL)
-			loop.quit()
+			player.set_pause(True)
+			player.close_player()   
 			screen.quit()
 			sys.exit(0)
-		elif pos == dur:
+		elif pos >= dur-1:
 			sleep(1)
-			if pos > 0:
-				loop.quit()
+			if LOOP:
+				rewind_callback()
+			else:
+				player.close_player()
 				break
+			sys.exit(0)
+			
 
 
 def main():
@@ -127,7 +128,7 @@ def main():
 		scr.reset()
 		while len(query) < 1:
 			scr.reset()
-			scr.draw(2, 2, "You didnot enter a valid query", curses.color_pair(2))
+			scr.draw(2, 2, "You did not enter a valid query", curses.color_pair(2))
 			sleep(2)
 			scr.reset()
 			query = scr.take_input(2, 2, "Search : ")
@@ -149,7 +150,6 @@ def main():
 		else:
 			results = search_video(query)
 			playlist = False
-
 	except Exception as e:
 		scr.draw(2, 2, f"Oops! Make sure you are connected to the internet", curses.color_pair(2))
 		sleep(2)
