@@ -70,7 +70,7 @@ def play_audio(screen, url, title=None):
 	while True:
 		stdscr.refresh()
 		pos_str, pos, dur = get_player_pos(player)
-		stdscr.addstr(3,  2, f"{state} : {pos_str} ", curses.color_pair(1))
+		stdscr.addstr(3,  2, f"{state} : {pos_str} \t\tVolume: {get_vol(player)}", curses.color_pair(1))
 		stdscr.hline(4,  2, curses.ACS_HLINE, curses.COLS-4)
 		stdscr.addstr(6,  2, "CONTROLS : ", curses.color_pair(3) | curses.A_BOLD)
 		stdscr.addstr(7,  2, "s             : STOP (Start next song in playlist) ", curses.color_pair(3))

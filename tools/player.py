@@ -41,8 +41,7 @@ def get_player_pos(player):
 	return "{:02d}:{:02d}/{:02d}:{:02d}".format(mins_curr, secs_curr, mins_tot, secs_tot), seconds_curr, seconds_tot
 
 def create_player(url):
-	music_stream_uri = extract_audio_url(url)[0]
-
+	music_stream_uri = extract_video_url(url)[0]
 	if not music_stream_uri:
 		print("Failed to create player")
 		sys.exit(1)
@@ -50,14 +49,22 @@ def create_player(url):
 	ff_opts={"no-disp":True}
 	player = MediaPlayer(music_stream_uri, ff_opts=ff_opts)
 	frame,val=player.get_frame()
-	tray=20.0
-	while tray!=0.0:
-		tray-=1
+	'''
+	This is given as any function call to player object except get_frame() before its initialized will give 'Segmentation Fault'.
+	Giving Audio URL to player will result in 'None' frame always as ffpyplayer returns video frame
+	So one way around is to get video url and wait till frame is not None
+	But Will Increase a bit of data usage.
+	'''
+	while frame==None:
 		frame,val=player.get_frame()
 		sleep(0.1)
 	return player
-
-
+def get_vol(player):
+	vol=int(player.get_volume()*100)
+	if vol<100:
+		return str(vol)+" "
+	else:
+		return str(vol)
 def play_audio(url, title=None):
 
 	stdscr = curses.initscr()
@@ -78,7 +85,7 @@ def play_audio(url, title=None):
 	try:
 		while True:
 			pos_str, pos, dur = get_player_pos(player)
-			stdscr.addstr(1, 0, f"{state}: {pos_str}") 
+			stdscr.addstr(1, 0, f"{state}: {pos_str}\t\tVolume: {get_vol(player)}") 
 			stdscr.hline(2, 0, curses.ACS_HLINE, int(curses.COLS))
 			stdscr.addstr(4, 0, "CONTROLS : ")
 			stdscr.addstr(5, 0, "s      : STOP (Start next song in playlist)")
