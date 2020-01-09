@@ -1,4 +1,5 @@
 import sys
+import time
 import curses
 from .youtube import *
 from time import sleep
@@ -6,9 +7,9 @@ from ffpyplayer.player import MediaPlayer
 
 LOOP=True
 
-def rewind_callback(player,start=False):
+def rewind_callback(player, start=False):
 	if start:
-		player.seek(0,relative=False)
+		player.seek(0, relative=False)
 	else:
 		player.seek(-10.0)
 		
@@ -16,23 +17,23 @@ def forward_callback(player):
 	player.seek(10.0)
 
 def increase_volume(player):
-	curr_vol=player.get_volume()
-	curr_vol+=0.05
-	curr_vol= 1.0 if curr_vol>1.0 else curr_vol
+	curr_vol = player.get_volume()
+	curr_vol += 0.05
+	curr_vol = 1.0 if curr_vol > 1.0 else curr_vol
 	player.set_volume(curr_vol)
 	
 def decrease_volume(player):
-	curr_vol=player.get_volume()
-	curr_vol-=0.05
-	curr_vol= 0.0 if curr_vol<0.0 else curr_vol
+	curr_vol = player.get_volume()
+	curr_vol -= 0.05
+	curr_vol = 0.0 if curr_vol < 0.0 else curr_vol
 	player.set_volume(curr_vol)
 
 def get_player_pos(player):
 	pos_int = player.get_pts()
-	dur_int= player.get_metadata()['duration']
+	dur_int = player.get_metadata()['duration']
 	seconds_curr = pos_int 
 	mins_curr = int(seconds_curr // 60)
-	secs_curr= int(seconds_curr % 60)
+	secs_curr = int(seconds_curr % 60)
 
 	seconds_tot = dur_int
 	mins_tot = int(seconds_tot // 60)
@@ -46,25 +47,28 @@ def create_player(url):
 		print("Failed to create player")
 		sys.exit(1)
 	
-	ff_opts={"no-disp":True}
-	player = MediaPlayer(music_stream_uri, ff_opts=ff_opts)
-	frame,val=player.get_frame()
-	'''
-	This is given as any function call to player object except get_frame() before its initialized will give 'Segmentation Fault'.
-	Giving Audio URL to player will result in 'None' frame always as ffpyplayer returns video frame
-	So one way around is to get video url and wait till frame is not None
-	But Will Increase a bit of data usage.
-	'''
-	while frame==None:
-		frame,val=player.get_frame()
-		sleep(0.1)
+	ff_opts = {"vn": True, "sn": True} # only audio
+
+	player = MediaPlayer(music_stream_uri, ff_opts=ff_opts, loglevel='debug')
+	
+	# refer : https://github.com/kivy/kivy/blob/52d12ebf33e410c9f4798674a93cbd0db8038bf1/kivy/core/audio/audio_ffpyplayer.py#L116
+	# method to prevent crash on load - since the stream hasn't been downloaded sufficiently yet 
+
+	player.toggle_pause()
+	s = time.perf_counter()
+	while (player.get_metadata()['duration'] is None and time.perf_counter() - s < 10.):
+		time.sleep(0.005)
+	
 	return player
+
 def get_vol(player):
-	vol=int(player.get_volume()*100)
-	if vol<100:
+	vol = int(player.get_volume()*100)
+	if vol < 100:
 		return str(vol)+" "
 	else:
 		return str(vol)
+
+
 def play_audio(url, title=None):
 
 	stdscr = curses.initscr()
@@ -77,6 +81,7 @@ def play_audio(url, title=None):
 	# Let user stop player gracefully
 	control = " "
 	player = create_player(url)
+	player.toggle_pause()
 	state = "Playing"
 	
 	if title:
@@ -105,7 +110,7 @@ def play_audio(url, title=None):
 			elif control == ord(" "):
 				if state == "Playing":
 					player.set_pause(True)
-					#NOTE Added Space Here To Pad Paused As Same width as Playing
+					#NOTE Added space here to pad Paused as same width as Playing
 					state = "Paused "
 				else:
 					player.set_pause(False)
