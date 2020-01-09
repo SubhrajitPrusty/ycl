@@ -6,9 +6,6 @@ from tools.pick import Picker
 from tools.player import *
 from tools.youtube import *
 
-
-
-
 class Window(object):
 	def __init__(self):
 		self.APP_NAME = " YCL - Youtube Command Line "
@@ -60,6 +57,7 @@ def play_audio(screen, url, title=None):
 	stdscr = screen.stdscr
 	stdscr.nodelay(1)
 	player = create_player(url)
+	player.toggle_pause()
 
 	control = " "
 	state = "Playing"
