@@ -73,8 +73,8 @@ def play_audio(screen, url, title=None):
 		stdscr.addstr(6,  2, "CONTROLS : ", curses.color_pair(3) | curses.A_BOLD)
 		stdscr.addstr(7,  2, "s             : STOP (Start next song in playlist) ", curses.color_pair(3))
 		stdscr.addstr(8,  2, "SPACE         : Toggle PLAY/PAUSE ", curses.color_pair(3))
-		stdscr.addstr(9,  2, "->            : Seek 10 seconds forward ", curses.color_pair(3))
-		stdscr.addstr(10, 2, "<-            : Seek 10 seconds backward ", curses.color_pair(3))
+		stdscr.addstr(9,  2, "→             : Seek 10 seconds forward ", curses.color_pair(3))
+		stdscr.addstr(10, 2, "←             : Seek 10 seconds backward ", curses.color_pair(3))
 		stdscr.addstr(11, 2, "↑             : Increase Volume", curses.color_pair(3))
 		stdscr.addstr(12, 2, "↓             : Decrease Volume", curses.color_pair(3))
 		stdscr.addstr(13, 2, "q             : Quit ", curses.color_pair(3))
@@ -91,7 +91,7 @@ def play_audio(screen, url, title=None):
 		elif control == ord(" "):
 			if state == "Playing":
 				player.set_pause(True)
-				state = "Paused"
+				state = "Paused "
 			else:
 				player.set_pause(False)
 				state = "Playing"
