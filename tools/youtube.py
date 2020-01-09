@@ -261,7 +261,21 @@ def download_video(url, hook):
 		print("Quitting.")
 		sys.exit(1)
 	
-
+def extract_video_url(yt_url):
+	YDL_OPTS = {
+		"ignore-errors" : True,
+		"format" : "best",
+		'logger' : MyLogger(),
+	}
+	try:
+		with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
+			info = ydl.extract_info(yt_url, download=False)
+			audio_url = info['formats'][-1]['url']
+			acodec = info['formats'][-1]['acodec']
+			return audio_url,acodec
+	except Exception as e:
+		print("Error :", e)
+		return None, None
 def extract_audio_url(yt_url):
 	YDL_OPTS = {
 		"ignore-errors" : True,
