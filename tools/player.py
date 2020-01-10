@@ -44,7 +44,7 @@ def get_player_pos(player):
 def create_player(url):
 	music_stream_uri = extract_video_url(url)[0]
 	if not music_stream_uri:
-		print("Failed to create player")
+		print("Failed to get audio")
 		sys.exit(1)
 	
 	ff_opts = {"vn": True, "sn": True} # only audio
@@ -85,21 +85,21 @@ def play_audio(url, title=None):
 	state = "Playing"
 	
 	if title:
-		stdscr.addstr(0, 0, f"Playing {title}")
+		stdscr.addstr(1, 1, f"Playing {title}")
 	
 	try:
 		while True:
 			pos_str, pos, dur = get_player_pos(player)
-			stdscr.addstr(1, 0, f"{state}: {pos_str}\t\tVolume: {get_vol(player)}") 
-			stdscr.hline(2, 0, curses.ACS_HLINE, int(curses.COLS))
-			stdscr.addstr(4, 0, "CONTROLS : ")
-			stdscr.addstr(5, 0, "s      : STOP (Start next song in playlist)")
-			stdscr.addstr(6, 0, "SPACE  : Toggle PLAY/PAUSE")
-			stdscr.addstr(7, 0, "→      : Seek 10 seconds forward")
-			stdscr.addstr(8, 0, "←      : Seek 10 seconds backward")
-			stdscr.addstr(9, 0, "↑      : Increase Volume")
-			stdscr.addstr(10, 0, "↓      : Decrease Volume")
-			stdscr.addstr(11, 0, "q      : Quit")
+			stdscr.addstr(3,  1, f"{state}: {pos_str}\t\tVolume: {get_vol(player)}") 
+			stdscr.hline (4,  1, curses.ACS_HLINE, int(curses.COLS))
+			stdscr.addstr(5,  1, "CONTROLS : ")
+			stdscr.addstr(6,  1, "s      : STOP (Start next song in playlist)")
+			stdscr.addstr(7,  1, "SPACE  : Toggle PLAY/PAUSE")
+			stdscr.addstr(8,  1, "→      : Seek 10 seconds forward")
+			stdscr.addstr(9,  1, "←      : Seek 10 seconds backward")
+			stdscr.addstr(10, 1, "↑      : Increase Volume")
+			stdscr.addstr(11, 1, "↓      : Decrease Volume")
+			stdscr.addstr(12, 1, "q      : Quit")
 			control = stdscr.getch()
 
 			if control == ord("s"):
