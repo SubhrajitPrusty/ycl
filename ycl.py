@@ -1,16 +1,10 @@
 import os
 import sys
 import click
-from tools.youtube import *
+from tools import tui
 from pick import Picker
-
-PLAY_SUPPORT=True
-
-try:
-	from tools import tui
-	from tools.player import *
-except Exception as e:
-	PLAY_SUPPORT=False
+from tools.player import *
+from tools.youtube import *
 
 def quit_pick(picker):
 	sys.exit(0)
@@ -47,7 +41,6 @@ def cli(query, playlistsearch, video, playlist, interactive):
 				sys.exit(3)
 		elif playlist:
 			isValid, details = isValidURL(query, urlType="playlist")
-			url = query
 			if isValid:
 				# print(f"Selected : {url}")
 				choice['id'] = details['id']
@@ -86,29 +79,18 @@ def cli(query, playlistsearch, video, playlist, interactive):
 		option, index = picker.start()
 			
 		if playlist or playlistsearch:
-			if option == "Download":
-				for playlist_item in extract_playlist_data(choice['url']):
+			for playlist_item in extract_playlist_data(choice['url']):
+				if option == "Download":
 					print(f"Downloading {playlist_item['title']}")
 					download_video(playlist_item['url'], print_hook)
-			elif option == "Play":
-				if not PLAY_SUPPORT:
-					print("Play support is not available for your system.")
-					sys.exit(2)
-				else:
-					for playlist_item in extract_playlist_data(choice['url']):
-						# print(f"Playing {playlist_item['title']}")
-						play_audio(playlist_item['url'], playlist_item['title'])
+				elif option == "Play":
+					play_audio(playlist_item['url'], playlist_item['title'])
 		else:
 			if option == "Download":
 				print(f"Downloading {choice['title']}")
 				download_video(choice['url'], print_hook)
 			elif option == "Play":
-				if not PLAY_SUPPORT:
-					print("Play support is not available for your system.")
-					sys.exit(2)
-				else:
-					# print(f"Playing {choice['title']}")
-					play_audio(choice['url'], choice['title'])
+				play_audio(choice['url'], choice['title'])
 
 
 if __name__ == '__main__':
