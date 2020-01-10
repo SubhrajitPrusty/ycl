@@ -162,10 +162,10 @@ def extract_playlist_data(url):
 			for x in totalItems:
 				snippet = x.get("snippet")
 				videoId = snippet.get("resourceId").get("videoId")
-				playlistItems.append({ "url" : "https://youtube.com/watch?v=" + videoId,
+				yield { "url" : "https://youtube.com/watch?v=" + videoId,
 										"id" : videoId,
 										"title" : snippet.get("title"),
-					})
+					}
 				
 		else:
 			# print(r.json())
@@ -174,7 +174,6 @@ def extract_playlist_data(url):
 	except Exception as e:
 		print(f"Exception {e}")
 
-	return playlistItems
 
 class MyLogger(object):
 	def debug(self, msg):
@@ -276,6 +275,7 @@ def extract_video_url(yt_url):
 	except Exception as e:
 		print("Error :", e)
 		return None, None
+
 def extract_audio_url(yt_url):
 	YDL_OPTS = {
 		"ignore-errors" : True,
