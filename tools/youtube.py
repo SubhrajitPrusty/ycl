@@ -30,6 +30,9 @@ def isValidURL(url, urlType="video"):
 	parsed = urlparse(url)
 	qss = parse_qs(parsed.query)
 
+	if not qss:
+		return False, None
+
 	try:
 		if urlType == "video":
 			videoId = qss['v'].pop()
@@ -56,8 +59,7 @@ def isValidURL(url, urlType="video"):
 			print("Check your internet connection.")
 			exit(1)
 		else:
-			print(f"ERROR: {type(e).__name__}")
-			exit(1)
+			raise e
 	
 	return False, None
 
@@ -294,3 +296,21 @@ def extract_audio_url(yt_url):
 		print("Error :", e)
 		return None, None
 		
+def parse_file(filename):
+	playlist = []
+	with open(filename) as f:
+		for line in  f.readlines():
+			# check if link or not
+			valid, details = isValidURL(line)
+			if valid:
+				playlist.append({ "url": line.strip(),
+								  "id" : details['id'],
+							      "title" : details['snippet']['title']
+								  })				
+			else:
+				result = search_video(line)
+				if len(result) > 0:
+						playlist.append(result[0])
+
+	return playlist
+
