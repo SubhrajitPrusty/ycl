@@ -53,6 +53,7 @@ class Window(object):
 		sys.exit(0)
 
 LOOP=True
+
 def play_audio_tui(screen, url, title=None):
 	stdscr = screen.stdscr
 	stdscr.nodelay(1)
