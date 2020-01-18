@@ -34,7 +34,6 @@ def get_player_pos(player):
 	seconds_curr = pos_int 
 	mins_curr = int(seconds_curr // 60)
 	secs_curr = int(seconds_curr % 60)
-
 	seconds_tot = dur_int
 	mins_tot = int(seconds_tot // 60)
 	secs_tot = int(seconds_tot % 60)
@@ -100,6 +99,7 @@ def play_audio(url, title=None):
 			stdscr.addstr(10, 1, "↑      : Increase Volume")
 			stdscr.addstr(11, 1, "↓      : Decrease Volume")
 			stdscr.addstr(12, 1, "q      : Quit")
+      
 			control = stdscr.getch()
 
 			if control == ord("s"):
