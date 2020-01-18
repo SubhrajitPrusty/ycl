@@ -11,6 +11,11 @@ Search, Play, Download Youtube videos from the terminal
 pip3 install -e .
 ```
 
+Windows
+
+> To properly setup ffpyplayer, follow instructions [here](http://matham.github.io/ffpyplayer/installation.html)
+
+
 ## Usage
 
 ```
@@ -19,7 +24,7 @@ Usage: ycl [OPTIONS] [QUERY]...
 Options:
   -ps, --playlistsearch  Searches for playlists
   -v, --video            Use a direct video link
-  -pl, --playlist        Use a direct playlist link
+  -pl, --playlist        Use a direct playlist link or file
   -i, --interactive      Starts an interactive session
   --help                 Show this message and exit.```
 ```
@@ -36,3 +41,5 @@ Inside the container
 ```
 ycl --help
 ```
+
+> May not work on Windows
