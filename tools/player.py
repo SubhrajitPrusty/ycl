@@ -1,4 +1,5 @@
 import sys
+import time
 import curses
 from .youtube import *
 from time import sleep
@@ -6,9 +7,9 @@ from ffpyplayer.player import MediaPlayer
 
 LOOP=True
 
-def rewind_callback(player,start=False):
+def rewind_callback(player, start=False):
 	if start:
-		player.seek(0,relative=False)
+		player.seek(0, relative=False)
 	else:
 		player.seek(-10.0)
 		
@@ -16,24 +17,23 @@ def forward_callback(player):
 	player.seek(10.0)
 
 def increase_volume(player):
-	curr_vol=player.get_volume()
-	curr_vol+=0.05
-	curr_vol= 1.0 if curr_vol>1.0 else curr_vol
+	curr_vol = player.get_volume()
+	curr_vol += 0.05
+	curr_vol = 1.0 if curr_vol > 1.0 else curr_vol
 	player.set_volume(curr_vol)
 	
 def decrease_volume(player):
-	curr_vol=player.get_volume()
-	curr_vol-=0.05
-	curr_vol= 0.0 if curr_vol<0.0 else curr_vol
+	curr_vol = player.get_volume()
+	curr_vol -= 0.05
+	curr_vol = 0.0 if curr_vol < 0.0 else curr_vol
 	player.set_volume(curr_vol)
 
 def get_player_pos(player):
 	pos_int = player.get_pts()
-	dur_int= player.get_metadata()['duration']
+	dur_int = player.get_metadata()['duration']
 	seconds_curr = pos_int 
 	mins_curr = int(seconds_curr // 60)
-	secs_curr= int(seconds_curr % 60)
-
+	secs_curr = int(seconds_curr % 60)
 	seconds_tot = dur_int
 	mins_tot = int(seconds_tot // 60)
 	secs_tot = int(seconds_tot % 60)
@@ -43,28 +43,31 @@ def get_player_pos(player):
 def create_player(url):
 	music_stream_uri = extract_video_url(url)[0]
 	if not music_stream_uri:
-		print("Failed to create player")
+		print("Failed to get audio")
 		sys.exit(1)
 	
-	ff_opts={"no-disp":True}
-	player = MediaPlayer(music_stream_uri, ff_opts=ff_opts)
-	frame,val=player.get_frame()
-	'''
-	This is given as any function call to player object except get_frame() before its initialized will give 'Segmentation Fault'.
-	Giving Audio URL to player will result in 'None' frame always as ffpyplayer returns video frame
-	So one way around is to get video url and wait till frame is not None
-	But Will Increase a bit of data usage.
-	'''
-	while frame==None:
-		frame,val=player.get_frame()
-		sleep(0.1)
+	ff_opts = {"vn": True, "sn": True} # only audio
+
+	player = MediaPlayer(music_stream_uri, ff_opts=ff_opts, loglevel='debug')
+	
+	# refer : https://github.com/kivy/kivy/blob/52d12ebf33e410c9f4798674a93cbd0db8038bf1/kivy/core/audio/audio_ffpyplayer.py#L116
+	# method to prevent crash on load - since the stream hasn't been downloaded sufficiently yet 
+
+	player.toggle_pause()
+	s = time.perf_counter()
+	while (player.get_metadata()['duration'] is None and time.perf_counter() - s < 10.):
+		time.sleep(0.005)
+	
 	return player
+
 def get_vol(player):
-	vol=int(player.get_volume()*100)
-	if vol<100:
+	vol = int(player.get_volume()*100)
+	if vol < 100:
 		return str(vol)+" "
 	else:
 		return str(vol)
+
+
 def play_audio(url, title=None):
 
 	stdscr = curses.initscr()
@@ -77,24 +80,26 @@ def play_audio(url, title=None):
 	# Let user stop player gracefully
 	control = " "
 	player = create_player(url)
+	player.toggle_pause()
 	state = "Playing"
 	
 	if title:
-		stdscr.addstr(0, 0, f"Playing {title}")
+		stdscr.addstr(1, 1, f"Playing {title}")
 	
 	try:
 		while True:
 			pos_str, pos, dur = get_player_pos(player)
-			stdscr.addstr(1, 0, f"{state}: {pos_str}\t\tVolume: {get_vol(player)}") 
-			stdscr.hline(2, 0, curses.ACS_HLINE, int(curses.COLS))
-			stdscr.addstr(4, 0, "CONTROLS : ")
-			stdscr.addstr(5, 0, "s      : STOP (Start next song in playlist)")
-			stdscr.addstr(6, 0, "SPACE  : Toggle PLAY/PAUSE")
-			stdscr.addstr(7, 0, "→      : Seek 10 seconds forward")
-			stdscr.addstr(8, 0, "←      : Seek 10 seconds backward")
-			stdscr.addstr(9, 0, "↑      : Increase Volume")
-			stdscr.addstr(10, 0, "↓      : Decrease Volume")
-			stdscr.addstr(11, 0, "q      : Quit")
+			stdscr.addstr(3,  1, f"{state}: {pos_str}\t\tVolume: {get_vol(player)}") 
+			stdscr.hline (4,  1, curses.ACS_HLINE, int(curses.COLS))
+			stdscr.addstr(5,  1, "CONTROLS : ")
+			stdscr.addstr(6,  1, "s      : STOP (Start next song in playlist)")
+			stdscr.addstr(7,  1, "SPACE  : Toggle PLAY/PAUSE")
+			stdscr.addstr(8,  1, "→      : Seek 10 seconds forward")
+			stdscr.addstr(9,  1, "←      : Seek 10 seconds backward")
+			stdscr.addstr(10, 1, "↑      : Increase Volume")
+			stdscr.addstr(11, 1, "↓      : Decrease Volume")
+			stdscr.addstr(12, 1, "q      : Quit")
+      
 			control = stdscr.getch()
 
 			if control == ord("s"):
@@ -105,7 +110,7 @@ def play_audio(url, title=None):
 			elif control == ord(" "):
 				if state == "Playing":
 					player.set_pause(True)
-					#NOTE Added Space Here To Pad Paused As Same width as Playing
+					#NOTE Added space here to pad Paused as same width as Playing
 					state = "Paused "
 				else:
 					player.set_pause(False)
