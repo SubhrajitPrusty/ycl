@@ -1,16 +1,10 @@
 import os
 import sys
 import click
-from tools.youtube import *
+from tools import tui
 from pick import Picker
-
-PLAY_SUPPORT=True
-
-try:
-	from tools import tui
-	from tools.player import *
-except Exception as e:
-	PLAY_SUPPORT=False
+from tools.player import *
+from tools.youtube import *
 
 def quit_pick(picker):
 	sys.exit(0)
@@ -19,10 +13,12 @@ def quit_pick(picker):
 @click.argument("query", nargs=-1)
 @click.option("--playlistsearch", "-ps", default=False, is_flag=True, help="Searches for playlists")
 @click.option("--video", "-v", default=False, is_flag=True, help="Use a direct video link")
-@click.option("--playlist", "-pl", default=False, is_flag=True, help="Use a direct playlist link")
+@click.option("--playlist", "-pl", default=False, is_flag=True, help="Use a direct playlist link or file")
 @click.option("--interactive", "-i", default=False, is_flag=True, help="Starts an interactive Terminal UI session")
 
 def cli(query, playlistsearch, video, playlist, interactive):
+	LOCAL_PLAYLIST = False
+
 	if interactive:
 		tui.main()
 	else:
@@ -47,15 +43,17 @@ def cli(query, playlistsearch, video, playlist, interactive):
 				sys.exit(3)
 		elif playlist:
 			isValid, details = isValidURL(query, urlType="playlist")
-			url = query
 			if isValid:
 				# print(f"Selected : {url}")
 				choice['id'] = details['id']
 				choice['url'] = query
 				choice['title'] = details['snippet']['title']
 			else:
-				print("Invalid URL")
-				sys.exit(3)
+				if os.path.exists(query):
+					LOCAL_PLAYLIST = parse_file(query)
+				else:
+					print("ERROR: Wrong link or file path")
+					sys.exit(3)
 		else:
 			if playlistsearch:
 				results = search_pl(query)
@@ -75,7 +73,8 @@ def cli(query, playlistsearch, video, playlist, interactive):
 
 			choice = results[index]
 			
-		print(f"Selected : {choice['url']}")
+		selected = query if LOCAL_PLAYLIST else choice['url']
+		print(f"Selected : {selected}")
 		
 		options = ["Play", "Download"]
 		title = "Choose what you want to do (q to quit)"
@@ -86,29 +85,24 @@ def cli(query, playlistsearch, video, playlist, interactive):
 		option, index = picker.start()
 			
 		if playlist or playlistsearch:
-			if option == "Download":
-				for playlist_item in extract_playlist_data(choice['url']):
-					print(f"Downloading {playlist_item['title']}")
-					download_video(playlist_item['url'], print_hook)
-			elif option == "Play":
-				if not PLAY_SUPPORT:
-					print("Play support is not available for your system.")
-					sys.exit(2)
-				else:
-					for playlist_item in extract_playlist_data(choice['url']):
-						# print(f"Playing {playlist_item['title']}")
-						play_audio(playlist_item['url'], playlist_item['title'])
+
+			if LOCAL_PLAYLIST:
+				playlist_list = LOCAL_PLAYLIST
+			else:
+				playlist_list = extract_playlist_data(choice['url'])
+
+			for video in playlist_list:
+				if option == "Download":
+					print(f"Downloading {video['title']}")
+					download_video(video['url'], print_hook)
+				elif option == "Play":
+					play_audio(video['url'], video['title'])
 		else:
 			if option == "Download":
 				print(f"Downloading {choice['title']}")
 				download_video(choice['url'], print_hook)
 			elif option == "Play":
-				if not PLAY_SUPPORT:
-					print("Play support is not available for your system.")
-					sys.exit(2)
-				else:
-					# print(f"Playing {choice['title']}")
-					play_audio(choice['url'], choice['title'])
+				play_audio(choice['url'], choice['title'])
 
 
 if __name__ == '__main__':
