@@ -188,24 +188,31 @@ class MyLogger(object):
 		print(msg)
 
 def print_hook(d):
+	filename = ".".join(d['filename'].split(".")[:-2]+["mkv"])
 	if d['status'] == 'finished':
-		msg = "Downloaded {}".format(d['filename'])
-	else:
+		print("\x1B[FDownloaded {}".format(filename))
+	elif d['status'] == 'downloading':
 		try:
 			percent_str = d.get('_percent_str')
-			downloaded_bytes = d.get('downloaded_bytes')
-			total_bytes = d.get('total_bytes')
-			elapsed = d.get('elapsed')
-			eta = d.get('eta')
-			speed = d.get('speed')
-			msg = f"Downloading: {percent_str} {speed_conv(downloaded_bytes)} of {speed_conv(total_bytes)}.\
-			  Elapsed: {str(round(elapsed,2)).rjust(5)}s Speed: {speed_conv(speed)}/s "
+			print(percent_str, end='\r')
 		except Exception as e:
-			msg = f"Downloading: {percent_str} Unknown of Unknown.\
-			  Elapsed: {str(round(elapsed,2)).rjust(5)}s Speed: Unknown/s "
+			pass
+		# 	downloaded_bytes = d.get('downloaded_bytes')
+		# 	total_bytes = d.get('total_bytes')
+		# 	elapsed = d.get('elapsed')
+		# 	eta = d.get('eta')
+		# 	speed = d.get('speed')
+		# 	msg = f"Downloading: {percent_str} {speed_conv(downloaded_bytes)} of {speed_conv(total_bytes)}.\
+		# 	  Elapsed: {str(round(elapsed,2)).ljust(5)}s Speed: {speed_conv(speed)}/s "
+		# 	msg = f"Downloading: {percent_str} Unknown of Unknown.\
+		# 	  Elapsed: {str(round(elapsed,2)).ljust(5)}s Speed: Unknown/s "
 
-	print(msg)
-	print("\x1B[F\x1B[K", end="")
+		# print(msg)
+		# print("\x1B[K\x1B[1F", end="")
+	elif d['status'] == 'error':
+		print("err")
+		return
+
 
 def return_hook(d):
 	if d['status'] == 'finished':
@@ -219,10 +226,10 @@ def return_hook(d):
 			eta = d.get('eta')
 			speed = d.get('speed')
 			msg = f"Downloading: {percent_str} {speed_conv(downloaded_bytes)} of {speed_conv(total_bytes)}.\
-			  Elapsed: {str(round(elapsed,2)).rjust(5)}s Speed: {speed_conv(speed)}/s "
+			  Elapsed: {str(round(elapsed,2)).ljust(5)}s Speed: {speed_conv(speed)}/s "
 		except Exception as e:
 			msg = f"Downloading: {percent_str} Unknown of Unknown.\
-			  Elapsed: {str(round(elapsed,2)).rjust(5)}s Speed: Unknown/s "
+			  Elapsed: {str(round(elapsed,2)).ljust(5)}s Speed: Unknown/s "
 
 	with open("/tmp/msg.pkl", "wb+") as fp:
 		pickle.dump(msg, fp)
@@ -243,13 +250,13 @@ def download_video(url, hook):
 			pickle.dump(msg, fp)
 
 	YDL_OPTS = {
-		'format' : 'best',
+		'format' : 'bestvideo+bestaudio',
 		'logger' : MyLogger(),
 		'progress_hooks' : [hook],
 		'outtmpl' : r"%(title)s.%(ext)s",
 		'ignore-errors': True,
 		'updatetime' : False,
-		'merge_output_format' : 'mkv'
+		'merge_output_format' : 'mkv',
 	}
 	
 	try:
