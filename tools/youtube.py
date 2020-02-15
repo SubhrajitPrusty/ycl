@@ -198,10 +198,10 @@ def print_hook(d):
 			elapsed = d.get('elapsed')
 			eta = d.get('eta')
 			speed = d.get('speed')
-			msg = f"Downloaded: {percent_str} {speed_conv(downloaded_bytes)} of {speed_conv(total_bytes)}.\
+			msg = f"Downloading: {percent_str} {speed_conv(downloaded_bytes)} of {speed_conv(total_bytes)}.\
 			  Elapsed: {str(round(elapsed,2)).rjust(5)}s Speed: {speed_conv(speed)}/s "
 		except Exception as e:
-			msg = f"Downloaded: {percent_str} Unknown of Unknown.\
+			msg = f"Downloading: {percent_str} Unknown of Unknown.\
 			  Elapsed: {str(round(elapsed,2)).rjust(5)}s Speed: Unknown/s "
 
 	print(msg)
@@ -209,7 +209,7 @@ def print_hook(d):
 
 def return_hook(d):
 	if d['status'] == 'finished':
-		msg = "Downloaded finished"
+		msg = "Downloaded {}".format(d['filename'])
 	else:
 		try:
 			percent_str = d.get('_percent_str')
@@ -218,10 +218,10 @@ def return_hook(d):
 			elapsed = d.get('elapsed')
 			eta = d.get('eta')
 			speed = d.get('speed')
-			msg = f"Downloaded: {percent_str} {speed_conv(downloaded_bytes)} of {speed_conv(total_bytes)}.\
+			msg = f"Downloading: {percent_str} {speed_conv(downloaded_bytes)} of {speed_conv(total_bytes)}.\
 			  Elapsed: {str(round(elapsed,2)).rjust(5)}s Speed: {speed_conv(speed)}/s "
 		except Exception as e:
-			msg = f"Downloaded: {percent_str} Unknown of Unknown.\
+			msg = f"Downloading: {percent_str} Unknown of Unknown.\
 			  Elapsed: {str(round(elapsed,2)).rjust(5)}s Speed: Unknown/s "
 
 	with open("/tmp/msg.pkl", "wb+") as fp:
@@ -243,7 +243,7 @@ def download_video(url, hook):
 			pickle.dump(msg, fp)
 
 	YDL_OPTS = {
-		'format' : 'bestvideo+bestaudio/best',
+		'format' : 'best',
 		'logger' : MyLogger(),
 		'progress_hooks' : [hook],
 		'outtmpl' : r"%(title)s.%(ext)s",
