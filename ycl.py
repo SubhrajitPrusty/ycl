@@ -93,13 +93,14 @@ def cli(query, playlistsearch, video, playlist, interactive):
 
 			for video in playlist_list:
 				if option == "Download":
-					print(f"Downloading {video['title']}")
+					print(f"\x1B[1KDownload: {video['title']}\n")
 					download_video(video['url'], print_hook)
+					# print()
 				elif option == "Play":
 					play_audio(video['url'], video['title'])
 		else:
 			if option == "Download":
-				print(f"Downloading {choice['title']}")
+				print(f"\x1B[1KDownload: {choice['title']}\n")
 				download_video(choice['url'], print_hook)
 			elif option == "Play":
 				play_audio(choice['url'], choice['title'])
