@@ -4,6 +4,7 @@ Search, Play, Download Youtube videos from the terminal
 ## Requirements
 
 * Python 3.6 and above
+* FFMPEG (or videos wont get merged)
 
 ## Install
 
