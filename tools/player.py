@@ -2,6 +2,7 @@ import sys
 import time
 import curses
 from .youtube import *
+from tools.lyrics import *
 from time import sleep
 from ffpyplayer.player import MediaPlayer
 
@@ -77,16 +78,21 @@ def play_audio(url, title=None):
 	stdscr.keypad(True)
 	stdscr.nodelay(1)
 
+	h,w=stdscr.getmaxyx()
 	# Let user stop player gracefully
 	control = " "
+	suburl=extract_video_sublink(url)[0]
+	if suburl:
+		subtitle=fetch_sub_from_link(suburl)
+		start=subtitle[0]['start']
+		subtext=" "*w
 	player = create_player(url)
 	player.toggle_pause()
 	state = "Playing"
-	
 	if title:
 		stdscr.addstr(1, 1, f"Playing {title}")
-	
 	try:
+		subindex=0
 		while True:
 			pos_str, pos, dur = get_player_pos(player)
 			stdscr.addstr(3,  1, f"{state}: {pos_str}\t\tVolume: {get_vol(player)}") 
@@ -99,9 +105,14 @@ def play_audio(url, title=None):
 			stdscr.addstr(10, 1, "↑      : Increase Volume")
 			stdscr.addstr(11, 1, "↓      : Decrease Volume")
 			stdscr.addstr(12, 1, "q      : Quit")
-      
+			stdscr.hline (13,  1, curses.ACS_HLINE, int(curses.COLS))
+			# stdscr.addstr(15, 2, "Subtitles")
+			if suburl:
+				stdscr.hline (14,  1, curses.ACS_HLINE, int(curses.COLS))
+				stdscr.addstr(17, 5, subtext)
 			control = stdscr.getch()
-
+			
+			
 			if control == ord("s"):
 				player.set_pause(True)
 				player.close_player()
@@ -135,7 +146,11 @@ def play_audio(url, title=None):
 					rewind_callback(player,start=True)
 				else:
 					player.close_player()
-					break				
+					break
+			elif suburl and pos>=start:
+				subindex+=1
+				start,subtext=subtitle[subindex]['start'],subtitle[subindex-1]['text']
+				subtext+=" "*(w-len(subtext))
 	finally:
 		curses.endwin()
 		print("\rStopping player...")
