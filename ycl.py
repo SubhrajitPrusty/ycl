@@ -16,8 +16,9 @@ def quit_pick(picker):
 @click.option("--video", "-v", default=False, is_flag=True, help="Use a direct video link")
 @click.option("--playlist", "-pl", default=False, is_flag=True, help="Use a direct playlist link or file")
 @click.option("--interactive", "-i", default=False, is_flag=True, help="Starts an interactive Terminal UI session")
+@click.option("--export", "-e", default=False, is_flag=True, help="Export A playlist to a local file")
 
-def cli(query, playlistsearch, video, playlist, interactive):
+def cli(query, playlistsearch, video, playlist, interactive,export):
 	LOCAL_PLAYLIST = False
 
 	if interactive:
@@ -55,6 +56,20 @@ def cli(query, playlistsearch, video, playlist, interactive):
 				else:
 					print("ERROR: Wrong link or file path")
 					sys.exit(3)
+		elif export:
+			isValid, details = isValidURL(query, urlType="playlist")
+			if isValid:
+				# print(f"Selected : {url}")
+				video_list='\n'.join([play_list['url'] for play_list in extract_playlist_data(query)])
+				SAVE_FILE=details['snippet']['title']+".ycl"
+				handle=open(SAVE_FILE,"w")
+				handle.write(video_list)
+				handle.close()
+				print(f"Playlist saved to {SAVE_FILE} ")
+				sys.exit()
+			else:
+				print("ERROR: Invalid URL")
+				sys.exit(3)
 		else:
 			if playlistsearch:
 				results = search_pl(query)
