@@ -307,7 +307,7 @@ def extract_video_sublink(yt_url):
 	YDL_OPTS = {
 		"ignore-errors" : True,
 		'logger' : MyLogger(),
-		"writeautomaticsub": False,
+		"writeautomaticsub": True,
 	}
 	try:
 		with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
