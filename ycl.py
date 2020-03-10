@@ -5,6 +5,7 @@ from tools import tui
 from pick import Picker
 from tools.player import *
 from tools.youtube import *
+import curses
 
 def quit_pick(picker):
 	sys.exit(0)
@@ -66,7 +67,6 @@ def cli(query, playlistsearch, video, playlist, interactive):
 
 			options = [x["title"] for x in results]
 			title = f"Search results for {query} (q to quit)"
-
 			picker = Picker(options, title)
 			picker.register_custom_handler(ord('q'), quit_pick)
 			option, index = picker.start()
@@ -83,7 +83,7 @@ def cli(query, playlistsearch, video, playlist, interactive):
 		picker.register_custom_handler(ord('q'), quit_pick)
 
 		option, index = picker.start()
-			
+		curses.initscr()
 		if playlist or playlistsearch:
 
 			if LOCAL_PLAYLIST:
