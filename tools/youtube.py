@@ -302,7 +302,23 @@ def extract_audio_url(yt_url):
 	except Exception as e:
 		print("Error :", e)
 		return None, None
-		
+
+def extract_video_sublink(yt_url):
+	YDL_OPTS = {
+		"ignore-errors" : True,
+		'logger' : MyLogger(),
+		"writeautomaticsub": True,
+	}
+	try:
+		with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
+			info = ydl.extract_info(yt_url, download=False)
+			subtitle=info['requested_subtitles']['en']['url']
+			format=info['requested_subtitles']['en']['ext']
+			return subtitle,format
+	except Exception as e:
+		print("Error :", e)
+		return None, None
+
 def parse_file(filename):
 	playlist = []
 	with open(filename) as f:
