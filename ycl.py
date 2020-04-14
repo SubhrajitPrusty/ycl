@@ -60,9 +60,9 @@ def cli(query, playlistsearch, video, playlist, interactive,export):
 			isValid, details = isValidURL(query, urlType="playlist")
 			if isValid:
 				# print(f"Selected : {url}")
-				video_list='\n'.join([play_list['url'] for play_list in extract_playlist_data(query)])
-				SAVE_FILE=details['snippet']['title']+".ycl"
-				handle=open(SAVE_FILE,"w")
+				video_list = '\n'.join([f"{play_list['url']},{play_list['title']}" for play_list in extract_playlist_data(query)])
+				SAVE_FILE = details['snippet']['title']+".ycl"
+				handle = open(SAVE_FILE, "w", encoding="utf8")
 				handle.write(video_list)
 				handle.close()
 				print(f"Playlist saved to {SAVE_FILE} ")
