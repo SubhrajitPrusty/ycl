@@ -1,8 +1,11 @@
+import re
 import os
 import sys
+import csv
 import pickle
 import requests
 import youtube_dl
+from loguru import logger
 from dotenv import load_dotenv
 from urllib.parse import urlparse, parse_qs
 
@@ -29,6 +32,7 @@ def isValidURL(url, urlType="video"):
 
 	parsed = urlparse(url)
 	qss = parse_qs(parsed.query)
+	# logger.debug(f"{parsed}: {qss}")
 
 	if not qss:
 		return False, None
@@ -313,18 +317,22 @@ def extract_video_sublink(yt_url):
 		with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
 			info = ydl.extract_info(yt_url, download=False)
 			subtitle=info['requested_subtitles']['en']['url']
-			format=info['requested_subtitles']['en']['ext']
-			return subtitle,format
+			_format=info['requested_subtitles']['en']['ext']
+			return subtitle,_format
 	except Exception as e:
-		print("Error :", e)
+		# print("Error :", e)
 		return None, None
 
 def parse_file(filename):
 	playlist = []
-	with open(filename) as f:
+	with open(filename, encoding='utf8') as f:
 		for line in  f.readlines():
 			# check if link or not
-			valid, details = isValidURL(line)
+			url, title = parse_line(line)
+			# logger.debug(f"{line}: {valid}")
+			valid, details = isValidURL(url)
+			# logger.debug(f"valid={valid} | url={url} | title={title}")
+
 			if valid:
 				playlist.append({ "url": line.strip(),
 								  "id" : details['id'],
@@ -337,3 +345,21 @@ def parse_file(filename):
 
 	return playlist
 
+
+def parse_line(line):
+	split_line = line.split(',')
+	regex = re.compile('^http[s]?://.*')
+	if len(split_line) == 1:
+		url = split_line[0]
+		title = ''
+	else:
+		url = split_line[0]
+		title = ','.join(split_line[1:])
+	
+	# check if actually url
+	reg_match = regex.match(url)
+	# logger.debug(f'regex_match={reg_match}')
+	if not reg_match:
+		return None, line
+
+	return url, title
