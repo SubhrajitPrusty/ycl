@@ -53,6 +53,13 @@ class Window(object):
 		curses.endwin()
 		sys.exit(0)
 
+
+def get_sub(subtitle, time):
+	for subs in subtitle:
+		if time > subs['start'] and time < subs['end']:
+			return subs['text']
+	return ""
+
 LOOP=True
 
 def play_audio_tui( screen, url, title=None):
@@ -64,9 +71,7 @@ def play_audio_tui( screen, url, title=None):
 	if suburl:
 		w-=3
 		subtitle=fetch_sub_from_link(suburl)
-		start=subtitle[0]['start']
 		subtext=" "*w
-		subindex=0
 	
 	control = " "
 	state = "Playing"
@@ -131,10 +136,9 @@ def play_audio_tui( screen, url, title=None):
 				player.close_player()
 				break
 			sys.exit(0)
-		elif suburl and pos>=start:
-			subindex+=1
-			start,subtext=subtitle[subindex]['start'],subtitle[subindex-1]['text']
-			subtext+=" "*(w-len(subtext))
+		if suburl:
+			subtext = get_sub(subtitle, pos)
+			subtext += " "*(w-len(subtext))
 
 
 def main():
