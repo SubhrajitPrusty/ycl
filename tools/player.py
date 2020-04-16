@@ -66,6 +66,12 @@ def get_vol(player):
 	else:
 		return str(vol)
 
+def get_sub(subtitle, time):
+	for subs in subtitle:
+		if time > subs['start'] and time < subs['end']:
+			return subs['text']
+	return ""
+
 
 def play_audio(url, title=None):
 
@@ -82,16 +88,14 @@ def play_audio(url, title=None):
 	suburl=extract_video_sublink(url)[0]
 	if suburl:
 		subtitle=fetch_sub_from_link(suburl)
-		start=subtitle[0]['start']
-		subtext=" "*w
+		subtext = " "*w
 	player = create_player(url)
 	player.toggle_pause()
 	state = "Playing"
 	if title:
 		stdscr.addstr(1, 1, f"Playing {title}")
 	try:
-		subindex=0
-		LOOP=False
+		LOOP = False
 		while True:
 			pos_str, pos, dur = get_player_pos(player)
 			stdscr.addstr(3,  1, f"{state}: {pos_str}\t\tVolume: {get_vol(player)}\t\tLoop: {' on' if LOOP else 'off'}") 
@@ -150,13 +154,8 @@ def play_audio(url, title=None):
 				else:
 					player.close_player()
 					break
-			elif suburl and pos>=start:
-				try: # TODO: issue #15
-					subindex+=1
-					start,subtext=subtitle[subindex]['start'],subtitle[subindex-1]['text']
-					subtext+=" "*(w-len(subtext))
-				except Exception as e:
-					# print(e)
-					pass
+			if suburl:
+				subtext = get_sub(subtitle, pos)
+				subtext += " "*(w-len(subtext))
 	finally:
 		curses.endwin()
