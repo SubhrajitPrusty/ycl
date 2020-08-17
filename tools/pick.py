@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-#-*-coding:utf-8-*-
+# -*-coding:utf-8-*-
 
 
 import curses
@@ -35,6 +35,7 @@ KEYS_UP = (curses.KEY_UP, ord('k'))
 KEYS_DOWN = (curses.KEY_DOWN, ord('j'))
 KEYS_SELECT = (curses.KEY_RIGHT, ord(' '))
 
+
 class Picker(object):
     """The :class:`Picker <Picker>` object
 
@@ -46,7 +47,15 @@ class Picker(object):
     :param options_map_func: (optional) a mapping function to pass each option through before displaying
     """
 
-    def __init__(self, options, title=None, indicator='*', default_index=0, multi_select=False, min_selection_count=0, options_map_func=None):
+    def __init__(
+            self,
+            options,
+            title=None,
+            indicator='*',
+            default_index=0,
+            multi_select=False,
+            min_selection_count=0,
+            options_map_func=None):
 
         if len(options) == 0:
             raise ValueError('options should not be an empty list')
@@ -60,10 +69,12 @@ class Picker(object):
         self.all_selected = []
 
         if default_index >= len(options):
-            raise ValueError('default_index should be less than the length of options')
+            raise ValueError(
+                'default_index should be less than the length of options')
 
         if multi_select and min_selection_count > len(options):
-            raise ValueError('min_selection_count is bigger than the available options, you will not be able to make any selection')
+            raise ValueError(
+                'min_selection_count is bigger than the available options, you will not be able to make any selection')
 
         if options_map_func is not None and not callable(options_map_func):
             raise ValueError('options_map_func must be a callable function')
@@ -138,7 +149,7 @@ class Picker(object):
 
     def draw(self):
         """draw the curses ui on the screen, handle scroll if needed"""
-        #self.screen.clear()
+        # self.screen.clear()
 
         x, y = 2, 2  # start point
         max_y, max_x = self.screen.getmaxyx()
@@ -154,13 +165,13 @@ class Picker(object):
             scroll_top = current_line - max_rows
         self.scroll_top = scroll_top
 
-        lines_to_draw = lines[scroll_top:scroll_top+max_rows]
+        lines_to_draw = lines[scroll_top:scroll_top + max_rows]
 
         for line in lines_to_draw:
-            if type(line) is tuple:
-                self.screen.addnstr(y, x, line[0], max_x-2, line[1])
+            if isinstance(line, tuple):
+                self.screen.addnstr(y, x, line[0], max_x - 2, line[1])
             else:
-                self.screen.addnstr(y, x, line, max_x-2)
+                self.screen.addnstr(y, x, line, max_x - 2)
             y += 1
 
         self.screen.refresh()
@@ -174,7 +185,8 @@ class Picker(object):
             elif c in KEYS_DOWN:
                 self.move_down()
             elif c in KEYS_ENTER:
-                if self.multi_select and len(self.all_selected) < self.min_selection_count:
+                if self.multi_select and len(
+                        self.all_selected) < self.min_selection_count:
                     continue
                 return self.get_selected()
             elif c in KEYS_SELECT and self.multi_select:
@@ -199,7 +211,14 @@ class Picker(object):
         return curses.wrapper(self._start)
 
 
-def pick(options, title=None, indicator='*', default_index=0, multi_select=False, min_selection_count=0, options_map_func=None):
+def pick(
+        options,
+        title=None,
+        indicator='*',
+        default_index=0,
+        multi_select=False,
+        min_selection_count=0,
+        options_map_func=None):
     """Construct and start a :class:`Picker <Picker>`.
 
     Usage::
@@ -209,5 +228,12 @@ def pick(options, title=None, indicator='*', default_index=0, multi_select=False
       >>> options = ['option1', 'option2', 'option3']
       >>> option, index = pick(options, title)
     """
-    picker = Picker(options, title, indicator, default_index, multi_select, min_selection_count, options_map_func)
+    picker = Picker(
+        options,
+        title,
+        indicator,
+        default_index,
+        multi_select,
+        min_selection_count,
+        options_map_func)
     return picker.start()
