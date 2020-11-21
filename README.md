@@ -26,9 +26,14 @@ Options:
   -ps, --playlistsearch  Searches for playlists
   -v, --video            Use a direct video link
   -pl, --playlist        Use a direct playlist link or file
-  -i, --interactive      Starts an interactive session
+  -i, --interactive      Starts an interactive Terminal UI session
+  -e, --export           Export A playlist to a local file
+  -o, --output TEXT      Set output format container, eg: mp4, mkv
   --help                 Show this message and exit.```
 ```
+
+> If you have problems with search, try replacing API KEY in `.env` file with your own.
+
 
 ## Docker
 
