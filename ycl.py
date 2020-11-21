@@ -25,7 +25,9 @@ def quit_pick(picker):
               help="Starts an interactive Terminal UI session")
 @click.option("--export", "-e", default=False, is_flag=True,
               help="Export A playlist to a local file")
-def cli(query, playlistsearch, video, playlist, interactive, export):
+@click.option("--output", "-o", default="mkv", is_flag=False,
+              help="Set output format container, eg: mp4, mkv")
+def cli(query, playlistsearch, video, playlist, interactive, export, output):
     LOCAL_PLAYLIST = False
 
     if interactive:
@@ -106,7 +108,8 @@ def cli(query, playlistsearch, video, playlist, interactive, export):
         picker.register_custom_handler(ord('q'), quit_pick)
 
         option, index = picker.start()
-        curses.initscr()
+        # curses.initscr()
+        curses.endwin()
         if playlist or playlistsearch:
 
             if LOCAL_PLAYLIST:
@@ -117,14 +120,14 @@ def cli(query, playlistsearch, video, playlist, interactive, export):
             for video in playlist_list:
                 if option == "Download":
                     print(f"\x1B[1KDownload: {video['title']}\n")
-                    download_video(video['url'], print_hook)
+                    download_video(video['url'], print_hook, output_format=output)
                     # print()
                 elif option == "Play":
                     play_audio(video['url'], video['title'])
         else:
             if option == "Download":
                 print(f"\x1B[1KDownload: {choice['title']}\n")
-                download_video(choice['url'], print_hook)
+                download_video(choice['url'], print_hook, output_format=output)
             elif option == "Play":
                 play_audio(choice['url'], choice['title'])
 

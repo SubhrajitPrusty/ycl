@@ -200,7 +200,7 @@ class MyLogger(object):
 
 
 def print_hook(d):
-    filename = ".".join(d['filename'].split(".")[:-2] + ["mkv"])
+    filename = ".".join(d['filename'].split(".")[:-2])
     if d['status'] == 'finished':
         print("\x1B[FDownloaded {}".format(filename))
     elif d['status'] == 'downloading':
@@ -248,7 +248,7 @@ def speed_conv(b):
         return f"{b} B".rjust(10)
 
 
-def download_video(url, hook):
+def download_video(url, hook, output_format="mkv"):
 
     msg = f"Downloading {url}"
     if hook == return_hook:
@@ -262,7 +262,7 @@ def download_video(url, hook):
         'outtmpl': r"%(title)s.%(ext)s",
         'ignore-errors': True,
         'updatetime': False,
-        'merge_output_format': 'mkv',
+        'merge_output_format': output_format,
     }
 
     try:
