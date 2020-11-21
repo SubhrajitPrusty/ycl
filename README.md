@@ -29,7 +29,7 @@ Options:
   -i, --interactive      Starts an interactive Terminal UI session
   -e, --export           Export A playlist to a local file
   -o, --output TEXT      Set output format container, eg: mp4, mkv
-  --help                 Show this message and exit.```
+  --help                 Show this message and exit.
 ```
 
 > If you have problems with search, try replacing API KEY in `.env` file with your own.
