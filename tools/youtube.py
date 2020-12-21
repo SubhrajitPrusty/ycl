@@ -11,7 +11,7 @@ from urllib.parse import urlparse, parse_qs
 
 load_dotenv()
 
-KEY = os.environ.get("KEY")
+KEY = os.environ.get("YOUTUBE_KEY")
 BASE_URL = "https://youtube.googleapis.com/youtube/v3"
 
 PAYLOAD = dict()
@@ -96,7 +96,6 @@ def search_video(query):
     """
 
     PAYLOAD['key'] = KEY
-
     PAYLOAD["part"] = "snippet"
     PAYLOAD["maxResults"] = 25
     PAYLOAD["q"] = query
