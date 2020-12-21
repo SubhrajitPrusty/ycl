@@ -1,6 +1,7 @@
 import re
 import os
 import sys
+import socket
 import pickle
 import requests
 import youtube_dl
@@ -11,9 +12,21 @@ from urllib.parse import urlparse, parse_qs
 load_dotenv()
 
 KEY = os.environ.get("KEY")
-BASE_URL = "https://www.googleapis.com/youtube/v3"
+BASE_URL = "https://youtube.googleapis.com/youtube/v3"
 
 PAYLOAD = dict()
+
+
+def is_connected():
+    SERVER = "one.one.one.one"
+    try:
+        host = socket.gethostbyname(SERVER)
+        s = socket.create_connection((host, 80), 2)
+        s.close()
+        return True
+    except Exception:
+        pass
+    return False
 
 
 def isValidURL(url, urlType="video"):
@@ -104,6 +117,9 @@ def search_video(query):
                         "id": videoId.get("videoId"),
                         "title": x["snippet"]["title"],
                     })
+    elif err := r.json().get("error"):
+        print(err["message"])
+        sys.exit(1)
     else:
         print("Couldn't connect.")
         sys.exit(1)
@@ -134,6 +150,9 @@ def search_pl(query):
                         "id": playlistId.get("playlistId"),
                         "title": x["snippet"]["title"],
                     })
+    elif err := r.json().get("error"):
+        print(err["message"])
+        sys.exit(1)
     else:
         print("Couldn't connect.")
         sys.exit(1)

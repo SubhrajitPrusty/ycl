@@ -1,11 +1,21 @@
 import os
 import sys
 import click
+import curses
 from tools import tui
 from pick import Picker
-from tools.player import *
-from tools.youtube import *
-import curses
+from loguru import logger
+from tools.player import (
+    download_video,
+    play_audio)
+from tools.youtube import (
+    is_connected,
+    isValidURL,
+    parse_file,
+    extract_playlist_data,
+    search_pl,
+    search_video,
+    print_hook)
 
 
 def quit_pick(picker):
@@ -29,6 +39,10 @@ def quit_pick(picker):
               help="Set output format container, eg: mp4, mkv")
 def cli(query, playlistsearch, video, playlist, interactive, export, output):
     LOCAL_PLAYLIST = False
+
+    if not is_connected():
+        click.secho("Check your internet connection.", fg="red", bg="yellow")
+        sys.exit(1)
 
     if interactive:
         tui.main()
