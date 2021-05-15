@@ -105,3 +105,5 @@ venv.bak/
 # Pickle
 *.pkl
 .env
+
+*.ycl
