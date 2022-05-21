@@ -1,5 +1,8 @@
+"""TUI helper functions
+"""
 import curses
 import os
+import sys
 from time import sleep
 
 from loguru import logger
@@ -10,7 +13,9 @@ from ycl.tools import youtube
 from ycl.tools.pick import Picker
 
 
-class Window(object):
+class Window():
+    """Custom TUI object
+    """
     def __init__(self):
         self.APP_NAME = " YCL - Youtube Command Line "
         self.stdscr = curses.initscr()
@@ -25,22 +30,32 @@ class Window(object):
         self.reset()
 
     def draw_bounds(self):
+        """Draw the bounds of the window
+        """
         self.stdscr.box()
         self.draw(0, 10, self.APP_NAME)
         self.stdscr.refresh()
 
     def clear(self):
+        """Clear the screen
+        """
         self.stdscr.clear()
 
     def reset(self):
+        """Reset the screen
+        """
         self.clear()
         self.draw_bounds()
 
     def draw(self, y, x, text, attr=0):
+        """Draw text on the screen
+        """
         self.stdscr.addstr(y, x, text, attr)
         self.stdscr.refresh()
 
     def take_input(self, y, x, input_text):
+        """Take input from user
+        """
         curses.echo()
         self.draw(y, x, input_text, curses.color_pair(1) | curses.A_BOLD)
         s = self.stdscr.getstr(y, len(input_text) + 2, 30)
@@ -48,27 +63,31 @@ class Window(object):
         curses.noecho()
         return s.decode()
 
-    def quit(self, *args, **kwargs):
+    def quit(self):
+        """Quit the window
+        """
         self.stdscr.clear()
         curses.nocbreak()
         self.stdscr.keypad(False)
         curses.echo()
         curses.endwin()
-        exit(0)
+        sys.exit(0)
 
 
+# TODO: Move to a helper file
 def get_sub(subtitle, time):
+    """Get the subtitle at the given time
+    """
     for subs in subtitle:
         if time > subs['start'] and time < subs['end']:
             return subs['text']
     return ""
 
 
-LOOP = True
-
-
 @logger.catch
 def play_audio_tui(screen, url, title=None):
+    """Play audio from URL in a TUI
+    """
     stdscr = screen.stdscr
     stdscr.nodelay(1)
 
@@ -86,7 +105,7 @@ def play_audio_tui(screen, url, title=None):
     if title:
         stdscr.addstr(2, 2, f"Playing {title}", curses.color_pair(1) | curses.A_BOLD)
 
-    LOOP = False
+    LOOP = True
     while True:
         stdscr.refresh()
         stdscr.addstr(3, 2, f"{player.state} : {player.formatted_position} \tVolume: {player.volume}\tLoop: {' on' if LOOP else 'off'}", curses.color_pair(1))
@@ -156,6 +175,8 @@ def play_audio_tui(screen, url, title=None):
 
 
 def main():
+    """Main event loop
+    """
     scr = Window()
 
     def search_page():
@@ -188,7 +209,7 @@ def main():
         options = ["No", "Yes"]
         picker = Picker(options, title, indicator="=>")
         picker.register_custom_handler(ord('q'), scr.quit)
-        option, index = picker._start(scr.stdscr)
+        _, index = picker._start(scr.stdscr)
         scr.reset()
         curses.curs_set(0)
         try:
@@ -216,7 +237,7 @@ def main():
     while len(results) < 1:
         scr.draw(2, 2, "No results found!", curses.color_pair(2))
         sleep(2)
-        results, query = make_search()
+        results, query, isPlaylist = make_search()
 
     # Pick results
     title = f"You searched for {query}. Search results: (q to quit)"

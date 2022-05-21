@@ -1,5 +1,9 @@
+"""CLI entrypoint
+"""
+
 import curses
 import os
+import sys
 from argparse import ArgumentParser
 
 from loguru import logger
@@ -16,15 +20,17 @@ logger.add('stderr', level='WARNING')
 
 
 def _quit_pick(picker):
-    exit(0)
+    sys.exit(0)
 
 
 def cli(query=None, playlistsearch=False, video=None, playlist=None, interactive=False, export=False, output=None):
+    """CLI logic handler
+    """
     LOCAL_PLAYLIST = False
 
     if not is_connected():
         print("Check your internet connection.")
-        exit(1)
+        sys.exit(1)
 
     if interactive:
         tui.main()
@@ -32,7 +38,7 @@ def cli(query=None, playlistsearch=False, video=None, playlist=None, interactive
         if not query:
             _msg = "Error: Enter a search query"
             print(_msg)
-            exit(1)
+            sys.exit(1)
 
         query = " ".join(query)
         choice = {}
@@ -45,7 +51,7 @@ def cli(query=None, playlistsearch=False, video=None, playlist=None, interactive
                 choice['title'] = details['snippet']['title']
             else:
                 print("Invalid URL")
-                exit(3)
+                sys.exit(3)
         elif playlist:
             isValid, details = isValidURL(query, urlType="playlist")
             if isValid:
@@ -57,7 +63,7 @@ def cli(query=None, playlistsearch=False, video=None, playlist=None, interactive
                     LOCAL_PLAYLIST = parse_file(query)
                 else:
                     print("ERROR: Wrong link or file path")
-                    exit(3)
+                    sys.exit(3)
         elif export:
             isValid, details = isValidURL(query, urlType="playlist")
             if isValid:
@@ -69,10 +75,10 @@ def cli(query=None, playlistsearch=False, video=None, playlist=None, interactive
                 handle.write(video_list)
                 handle.close()
                 print(f"Playlist saved to {SAVE_FILE} ")
-                exit()
+                sys.exit()
             else:
                 print("ERROR: Invalid URL")
-                exit(3)
+                sys.exit(3)
         else:
             if playlistsearch:
                 results = search_pl(query)
@@ -81,7 +87,7 @@ def cli(query=None, playlistsearch=False, video=None, playlist=None, interactive
 
             if len(results) < 1:
                 print("No results found.")
-                exit(3)
+                sys.exit(3)
 
             options = [x["title"] for x in results]
             title = f"Search results for {query} (q to quit)"
@@ -125,6 +131,8 @@ def cli(query=None, playlistsearch=False, video=None, playlist=None, interactive
 
 
 def main():
+    """Argparse handler
+    """
     arg_parser = ArgumentParser(description="YCL - Youtube Command Line")
     arg_parser.add_argument('query', nargs='*', type=str, help="Search query")
     arg_parser.add_argument("--playlistsearch", "-ps", action='store_true', default=False, help="Searches for playlists")

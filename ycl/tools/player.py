@@ -1,3 +1,5 @@
+"""Media player functions
+"""
 import curses
 import os
 from time import sleep
@@ -122,7 +124,10 @@ class VLCMediaPlayer():
         """
         return self.player.audio_get_volume()
 
-    def get_sub(self, subtitle, time):
+    @classmethod
+    def get_sub(cls, subtitle, time):
+        """Fetch subtitles based on timing
+        """
         # legacy
         for subs in subtitle:
             if time > subs['start'] and time < subs['end']:
@@ -156,12 +161,16 @@ class VLCMediaPlayer():
         mins_tot = int(seconds_tot // 60)
         secs_tot = int(seconds_tot % 60)
 
-        return "{:02d}:{:02d}/{:02d}:{:02d}".format(mins_curr, secs_curr, mins_tot, secs_tot)
+        return f"{mins_curr:02d}:{secs_curr:02d}/{mins_tot:02d}:{secs_tot:02d}"
 
 
 @logger.catch
 def play_audio(url, title=None):
+    """Play audio from URL
 
+    :param url: URL of the Youtube video
+    :param title: Title of the video
+    """
     stdscr = curses.initscr()
     curses.cbreak()
     curses.noecho()
