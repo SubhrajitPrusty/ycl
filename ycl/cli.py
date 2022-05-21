@@ -100,8 +100,8 @@ def cli(query=None, playlistsearch=False, video=None, playlist=None, interactive
 
         picker.register_custom_handler(ord('q'), _quit_pick)
 
+        curses.initscr().clear()
         option, index = picker.start()
-        # curses.initscr()
         curses.endwin()
         if playlist or playlistsearch:
 
