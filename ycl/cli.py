@@ -16,7 +16,7 @@ from ycl.tools.youtube import (download_video, extract_playlist_data,
                                print_hook, search_pl, search_video)
 
 logger.remove(0)
-logger.add('stderr', level='WARNING')
+logger.add(sys.stderr, level='WARNING')
 
 
 def _quit_pick(picker):
