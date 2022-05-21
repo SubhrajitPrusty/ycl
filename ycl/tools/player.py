@@ -55,7 +55,7 @@ class VLCMediaPlayer():
         """Repeat the track
         """
         self.player.set_position(0.0)
-        self.play()
+        self.player.play()
 
     def seek_forward(self):
         """Go forward 5 sec"""
