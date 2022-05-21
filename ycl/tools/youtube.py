@@ -113,7 +113,7 @@ def search_video(query):
             if videoId.get("kind") == "youtube#video":
                 results.append(
                     {
-                        "url": f"https://youtube.com/watch?v={videoId.get('videoId')}",  # noqa : E501
+                        "url": f"https://youtube.com/watch?v={videoId.get('videoId')}",
                         "id": videoId.get("videoId"),
                         "title": x["snippet"]["title"],
                     })
@@ -146,7 +146,7 @@ def search_pl(query):
             if playlistId.get("kind") == "youtube#playlist":
                 results.append(
                     {
-                        "url": f"https://youtube.com/playlist?list={playlistId.get('playlistId')}",  # noqa : E501
+                        "url": f"https://youtube.com/playlist?list={playlistId.get('playlistId')}",
                         "id": playlistId.get("playlistId"),
                         "title": x["snippet"]["title"],
                     })
