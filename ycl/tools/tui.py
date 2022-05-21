@@ -4,10 +4,10 @@ from time import sleep
 
 from loguru import logger
 
-from tools import lyrics
-from tools import player as _player
-from tools import youtube
-from tools.pick import Picker
+from ycl.tools import lyrics
+from ycl.tools import player as _player
+from ycl.tools import youtube
+from ycl.tools.pick import Picker
 
 
 class Window(object):

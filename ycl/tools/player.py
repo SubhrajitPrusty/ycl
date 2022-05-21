@@ -5,7 +5,7 @@ from time import sleep
 import vlc
 from loguru import logger
 
-from tools import lyrics, youtube
+from ycl.tools import lyrics, youtube
 
 
 class VLCMediaPlayer():

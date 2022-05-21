@@ -5,18 +5,18 @@ from argparse import ArgumentParser
 
 from pick import Picker
 
-from tools import tui
-from tools.player import play_audio
-from tools.youtube import (download_video, extract_playlist_data, is_connected,
-                           isValidURL, parse_file, print_hook, search_pl,
-                           search_video)
+from ycl.tools import tui
+from ycl.tools.player import play_audio
+from ycl.tools.youtube import (download_video, extract_playlist_data,
+                               is_connected, isValidURL, parse_file,
+                               print_hook, search_pl, search_video)
 
 
 def _quit_pick(picker):
     sys.exit(0)
 
 
-def cli(query, playlistsearch, video, playlist, interactive, export, output):
+def cli(query=None, playlistsearch=False, video=None, playlist=None, interactive=False, export=False, output=None):
     LOCAL_PLAYLIST = False
 
     if not is_connected():
@@ -121,7 +121,7 @@ def cli(query, playlistsearch, video, playlist, interactive, export, output):
                 play_audio(choice['url'], choice['title'])
 
 
-if __name__ == '__main__':
+def main():
     arg_parser = ArgumentParser(description="YCL - Youtube Command Line")
     arg_parser.add_argument('query', nargs='?', help="Search query")
     arg_parser.add_argument("--playlistsearch", "-ps", action='store_true', default=False, help="Searches for playlists")
@@ -133,3 +133,7 @@ if __name__ == '__main__':
 
     args = arg_parser.parse_args()
     cli(args.query, args.playlistsearch, args.video, args.playlist, args.interactive, args.export, args.output)
+
+
+if __name__ == "__main__":
+    main()

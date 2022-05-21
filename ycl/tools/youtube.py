@@ -1,20 +1,21 @@
-import re
 import os
-import sys
-import socket
 import pickle
+import re
+import socket
+import sys
+from urllib.parse import parse_qs, urlparse
+
 import requests
 import youtube_dl
-from loguru import logger
 from dotenv import load_dotenv
-from urllib.parse import urlparse, parse_qs
+from loguru import logger
 
 load_dotenv()
 
 KEY = os.environ.get("YOUTUBE_KEY")
 BASE_URL = "https://youtube.googleapis.com/youtube/v3"
 
-PAYLOAD = dict()
+PAYLOAD = {}
 
 
 def is_connected():
@@ -160,7 +161,7 @@ def search_pl(query):
 
 
 def extract_playlist_data(url):
-    PAYLOAD = dict()
+    PAYLOAD = {}
     PAYLOAD['key'] = KEY
     PAYLOAD["maxResults"] = 50
     parsed = urlparse(url)
