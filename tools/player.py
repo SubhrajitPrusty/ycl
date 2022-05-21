@@ -1,88 +1,162 @@
-import sys
-import time
 import curses
-from .youtube import *
+import os
 from time import sleep
+
+import vlc
 from loguru import logger
-from tools.lyrics import *
-from ffpyplayer.player import MediaPlayer
+
+from tools import lyrics, youtube
 
 
-def rewind_callback(player, start=False):
-    if start:
-        player.seek(0, relative=False)
-    else:
-        player.seek(-10.0)
+class VLCMediaPlayer():
+    """Object that emulates the vlc media player
+    """
 
+    def __init__(self, audio_url, *args):
+        self.url = audio_url
+        self.create_player(*args)
 
-def forward_callback(player):
-    player.seek(10.0)
+    def create_player(self, *args):
+        """Initialize player with the audio URL
+        """
+        music_stream_uri = youtube.extract_video_url(self.url)[0]
+        if not music_stream_uri:
+            print("Failed to get audio")
+            exit(1)
 
+        instance = vlc.Instance(*args)
+        self.media = instance.media_new_location(music_stream_uri)
+        self.player = instance.media_player_new()
+        self.player.set_media(self.media)
 
-def increase_volume(player):
-    curr_vol = player.get_volume()
-    curr_vol += 0.05
-    curr_vol = 1.0 if curr_vol > 1.0 else curr_vol
-    player.set_volume(curr_vol)
+    def play(self):
+        """Start the player
+        """
+        self.player.play()
+        sleep(0.5)
 
+    def pause(self):
+        """Pause the player
+        """
+        self.player.pause()
 
-def decrease_volume(player):
-    curr_vol = player.get_volume()
-    curr_vol -= 0.05
-    curr_vol = 0.0 if curr_vol < 0.0 else curr_vol
-    player.set_volume(curr_vol)
+    def toggle_pause(self):
+        """Toggle the play/pause
+        """
+        self.player.pause()
 
+    def stop(self):
+        """Stop the player
+        """
+        self.player.stop()
+        sleep(0.5)
 
-def get_player_pos(player):
-    pos_int = player.get_pts()
-    dur_int = player.get_metadata()['duration']
-    seconds_curr = pos_int
-    mins_curr = int(seconds_curr // 60)
-    secs_curr = int(seconds_curr % 60)
-    seconds_tot = dur_int
-    mins_tot = int(seconds_tot // 60)
-    secs_tot = int(seconds_tot % 60)
+    def repeat(self):
+        """Repeat the track
+        """
+        self.player.set_position(0.0)
+        self.play()
 
-    return "{:02d}:{:02d}/{:02d}:{:02d}".format(
-        mins_curr, secs_curr, mins_tot, secs_tot), seconds_curr, seconds_tot
+    def seek_forward(self):
+        """Go forward 5 sec"""
+        self.player.set_time(self.player.get_time() + 5000)
 
+    def seek_backward(self):
+        """Go backward 5 sec"""
+        self.player.set_time(self.player.get_time() - 5000)
 
-def create_player(url):
-    music_stream_uri = extract_video_url(url)[0]
-    if not music_stream_uri:
-        print("Failed to get audio")
-        sys.exit(1)
+    def increase_volume(self):
+        """Increase volume by 5%
+        """
+        curr_vol = self.player.audio_get_volume()
+        curr_vol += 5
+        curr_vol = 100 if curr_vol > 100 else curr_vol
+        self.player.audio_set_volume(curr_vol)
 
-    ff_opts = {"vn": True, "sn": True}  # only audio
+    def decrease_volume(self):
+        """Decrease volume by 5%
+        """
+        curr_vol = self.player.audio_get_volume()
+        curr_vol -= 5
+        curr_vol = 0 if curr_vol < 0 else curr_vol
+        self.player.audio_set_volume(curr_vol)
 
-    player = MediaPlayer(music_stream_uri, ff_opts=ff_opts, loglevel='debug')
+    def toggle_mute(self):
+        """Toggle mute
+        """
+        self.player.audio_toggle_mute()
 
-    # refer : https://github.com/kivy/kivy/blob/52d12ebf33e410c9f4798674a93cbd0db8038bf1/kivy/core/audio/audio_ffpyplayer.py#L116  # noqa: E501
-    # method to prevent crash on load - since the stream hasn't been
-    # downloaded sufficiently yet
+    @property
+    def is_playing(self):
+        """Check is player is paused
+        """
+        return self.player.is_playing()
 
-    player.toggle_pause()
-    s = time.perf_counter()
-    while (player.get_metadata()['duration']
-           is None and time.perf_counter() - s < 10.):
-        time.sleep(0.005)
+    @property
+    def is_mute(self):
+        """Check if player is muted
+        """
+        return self.player.audio_get_mute()
 
-    return player
+    @property
+    def total_duration(self):
+        """Total duraion in ms
+        """
+        return self.player.get_length()
 
+    @property
+    def current_duration(self):
+        """Current duration in ms
+        """
+        return self.player.get_time()
 
-def get_vol(player):
-    vol = int(player.get_volume() * 100)
-    if vol < 100:
-        return str(vol) + " "
-    else:
-        return str(vol)
+    @property
+    def position(self):
+        """Get position as percentage between 0.0 and 1.0
+        """
+        return self.player.get_position()
 
+    @property
+    def volume(self):
+        """Get current volume
+        """
+        return self.player.audio_get_volume()
 
-def get_sub(subtitle, time):
-    for subs in subtitle:
-        if time > subs['start'] and time < subs['end']:
-            return subs['text']
-    return ""
+    def get_sub(self, subtitle, time):
+        # legacy
+        for subs in subtitle:
+            if time > subs['start'] and time < subs['end']:
+                return subs['text']
+        return ""
+
+    @property
+    def will_play(self):
+        """Check if player will be able to play
+        """
+        return self.player.will_play()
+
+    @property
+    def state(self):
+        """Get player state
+        """
+        _player_state = self.player.get_state()
+        _state = str(_player_state)[6:].ljust(8)
+        return _state
+
+    @property
+    def formatted_position(self):
+        """Get the current player time in a format
+        """
+        seconds_curr = self.current_duration / 1000.0
+        seconds_tot = self.total_duration / 1000.0
+
+        mins_curr = int(seconds_curr // 60)
+        secs_curr = int(seconds_curr % 60)
+
+        mins_tot = int(seconds_tot // 60)
+        secs_tot = int(seconds_tot % 60)
+
+        return "{:02d}:{:02d}/{:02d}:{:02d}".format(mins_curr, secs_curr, mins_tot, secs_tot)
 
 
 @logger.catch
@@ -98,23 +172,24 @@ def play_audio(url, title=None):
     _, w = stdscr.getmaxyx()
     # Let user stop player gracefully
     control = " "
-    suburl = extract_video_sublink(url)
+
+    suburl = youtube.extract_video_sublink(url)
     if suburl:
-        subtitle = fetch_sub_from_link(suburl)
+        subtitle = lyrics.fetch_sub_from_link(suburl)
         subtext = " " * w
-    player = create_player(url)
-    player.toggle_pause()
-    state = "Playing"
+
+    player = VLCMediaPlayer(url, '--no-video')
+    player.play()
+
+    player.pause()
     if title:
         stdscr.addstr(1, 1, f"Playing {title}")
     try:
         LOOP = False
         while True:
-            pos_str, pos, dur = get_player_pos(player)
-            stdscr.addstr(3, 1, f"{state}: {pos_str}\
-                \t\tVolume: {get_vol(player)}\
-                \t\tLoop: {' on' if LOOP else 'off'}")
+            stdscr.addstr(3, 1, f"{player.state}: {player.formatted_position}\tVolume: {player.volume}\tLoop: {'on'.ljust(3) if LOOP else 'off'}")
             stdscr.hline(4, 1, curses.ACS_HLINE, int(curses.COLS))
+            # TODO: Move this into a separate curses page
             stdscr.addstr(5, 1, "CONTROLS: ")
             stdscr.addstr(6, 1, "s       : STOP (Start next song in playlist)")
             stdscr.addstr(7, 1, "SPACE   : Toggle PLAY/PAUSE")
@@ -125,52 +200,51 @@ def play_audio(url, title=None):
             stdscr.addstr(12, 1, "L       : Toggle loop")
             stdscr.addstr(13, 1, "q       : Quit")
             stdscr.hline(14, 1, curses.ACS_HLINE, int(curses.COLS))
-            # stdscr.addstr(15, 2, "Subtitles")
+            stdscr.addstr(15, 1, "Subtitles")
             if suburl:
                 stdscr.hline(14, 1, curses.ACS_HLINE, int(curses.COLS))
                 stdscr.addstr(17, 5, subtext)
             control = stdscr.getch()
 
             if control == ord("s"):
-                player.set_pause(True)
-                player.close_player()
+                player.pause()
+                sleep(0.5)
+                player.stop()
                 break
 
             elif control == ord(" "):
-                if state == "Playing":
-                    player.set_pause(True)
-                    # NOTE Added space here to pad Paused as same width as
-                    # Playing
-                    state = "Paused "
-                else:
-                    player.set_pause(False)
-                    state = "Playing"
+                player.toggle_pause()
             elif control == curses.KEY_RIGHT:
-                forward_callback(player)
+                player.seek_forward()
             elif control == curses.KEY_LEFT:
-                rewind_callback(player)
+                player.seek_backward()
             elif control == curses.KEY_UP:
-                increase_volume(player)
+                player.increase_volume()
             elif control == curses.KEY_DOWN:
-                decrease_volume(player)
+                player.decrease_volume()
             elif control == ord('l'):
                 LOOP = not LOOP
+            elif control == ord('m'):
+                player.toggle_mute()
             elif control == ord('q'):
-                player.set_pause(True)
-                player.close_player()
+                player.pause()
+                sleep(0.5)
+                player.stop()
                 del player  # just to be safe
+                os.system('cls' if os.name == 'nt' else 'clear')
                 curses.endwin()
-                # print("Quitting...\n\n")
-                sys.exit(0)
-            elif pos >= dur - 1:
-                sleep(1)
+                exit(0)
+            elif player.state.strip() == 'Ended':
+                sleep(0.5)
                 if LOOP:
-                    rewind_callback(player, start=True)
+                    player.repeat()
                 else:
-                    player.close_player()
+                    player.stop()
                     break
+
             if suburl:
-                subtext = get_sub(subtitle, pos)
+                subtext = lyrics.get_sub(subtitle, player.current_duration / 1000.0)
                 subtext += " " * (w - len(subtext))
     finally:
+        os.system('cls' if os.name == 'nt' else 'clear')
         curses.endwin()

@@ -1,11 +1,13 @@
-import sys
 import curses
+import os
 from time import sleep
+
 from loguru import logger
+
+from tools import lyrics
+from tools import player as _player
+from tools import youtube
 from tools.pick import Picker
-from tools.player import *
-from tools.lyrics import *
-from tools.youtube import *
 
 
 class Window(object):
@@ -52,7 +54,7 @@ class Window(object):
         self.stdscr.keypad(False)
         curses.echo()
         curses.endwin()
-        sys.exit(0)
+        exit(0)
 
 
 def get_sub(subtitle, time):
@@ -71,71 +73,35 @@ def play_audio_tui(screen, url, title=None):
     stdscr.nodelay(1)
 
     _, w = stdscr.getmaxyx()
-    suburl = extract_video_sublink(url)
+    suburl = youtube.extract_video_sublink(url)
     if suburl:
         w -= 3
-        subtitle = fetch_sub_from_link(suburl)
+        subtitle = lyrics.fetch_sub_from_link(suburl)
         subtext = " " * w
 
     control = " "
-    state = "Playing"
 
-    player = create_player(url)
-    player.toggle_pause()
+    player = _player.VLCMediaPlayer(url, '--no-video')
+    player.play()
     if title:
-        stdscr.addstr(
-            2,
-            2,
-            f"Playing {title}",
-            curses.color_pair(1) | curses.A_BOLD)
+        stdscr.addstr(2, 2, f"Playing {title}", curses.color_pair(1) | curses.A_BOLD)
 
+    LOOP = False
     while True:
         stdscr.refresh()
-        pos_str, pos, dur = get_player_pos(player)
-        stdscr.addstr(
-            3,
-            2,
-            f"{state} : {pos_str} \t\tVolume: {get_vol(player)}",
-            curses.color_pair(1))
+        stdscr.addstr(3, 2, f"{player.state} : {player.formatted_position} \tVolume: {player.volume}\tLoop: {' on' if LOOP else 'off'}", curses.color_pair(1))
         stdscr.hline(4, 2, curses.ACS_HLINE, curses.COLS - 4)
-        stdscr.addstr(
-            6,
-            2,
-            "CONTROLS : ",
-            curses.color_pair(3) | curses.A_BOLD)
-        stdscr.addstr(
-            7,
-            2,
-            "s             : STOP (Start next song in playlist) ",
-            curses.color_pair(3))
-        stdscr.addstr(
-            8,
-            2,
-            "SPACE         : Toggle PLAY/PAUSE ",
-            curses.color_pair(3))
-        stdscr.addstr(
-            9,
-            2,
-            "→             : Seek 10 seconds forward ",
-            curses.color_pair(3))
-        stdscr.addstr(
-            10,
-            2,
-            "←             : Seek 10 seconds backward ",
-            curses.color_pair(3))
-        stdscr.addstr(
-            11,
-            2,
-            "↑             : Increase Volume",
-            curses.color_pair(3))
-        stdscr.addstr(
-            12,
-            2,
-            "↓             : Decrease Volume",
-            curses.color_pair(3))
+        # TODO: Move this into a separate curses page
+        stdscr.addstr(6, 2, "CONTROLS : ", curses.color_pair(3) | curses.A_BOLD)
+        stdscr.addstr(7, 2, "s             : STOP (Start next song in playlist) ", curses.color_pair(3))
+        stdscr.addstr(8, 2, "SPACE         : Toggle PLAY/PAUSE ", curses.color_pair(3))
+        stdscr.addstr(9, 2, "→             : Seek 10 seconds forward ", curses.color_pair(3))
+        stdscr.addstr(10, 2, "←             : Seek 10 seconds backward ", curses.color_pair(3))
+        stdscr.addstr(11, 2, "↑             : Increase Volume", curses.color_pair(3))
+        stdscr.addstr(12, 2, "↓             : Decrease Volume", curses.color_pair(3))
         stdscr.addstr(13, 2, "q             : Quit ", curses.color_pair(3))
         stdscr.hline(14, 2, curses.ACS_HLINE, curses.COLS - 4)
-        # stdscr.addstr(15, 2, "Subtitles")
+        stdscr.addstr(15, 2, "Subtitles")
         if suburl:
             stdscr.hline(15, 2, curses.ACS_HLINE, curses.COLS - 4)
             stdscr.addstr(18, 2, subtext, curses.color_pair(4))
@@ -143,41 +109,48 @@ def play_audio_tui(screen, url, title=None):
         control = stdscr.getch()
 
         if control == ord("s"):
-            player.set_pause(True)
-            player.close_player()
-            state = "Stopped"
+            player.pause()
             stdscr.refresh()
+            sleep(0.5)
+            player.stop()
             break
+
         elif control == ord(" "):
-            if state == "Playing":
-                player.set_pause(True)
-                state = "Paused "
-            else:
-                player.set_pause(False)
-                state = "Playing"
+            player.toggle_pause()
         elif control == curses.KEY_RIGHT:
-            forward_callback(player)
+            player.seek_forward()
         elif control == curses.KEY_LEFT:
-            rewind_callback(player)
+            player.seek_backward()
         elif control == curses.KEY_UP:
-            increase_volume(player)
+            player.increase_volume()
         elif control == curses.KEY_DOWN:
-            decrease_volume(player)
+            player.decrease_volume()
+        elif control == ord('l'):
+            LOOP = not LOOP
+        elif control == ord('m'):
+            player.toggle_mute()
         elif control == ord('q'):
-            player.set_pause(True)
-            player.close_player()
+            player.pause()
+            sleep(0.5)
+            player.stop()
             screen.quit()
-            sys.exit(0)
-        elif pos >= dur - 1:
-            sleep(1)
+            del player  # just to be safe
+            os.system('cls' if os.name == 'nt' else 'clear')
+            curses.endwin()
+            exit(0)
+        elif control == ord('r'):
+            sleep(0.5)
+            player.repeat()
+
+        elif player.state.strip() == "Ended":
+            sleep(0.5)
             if LOOP:
-                rewind_callback()
+                player.repeat()
             else:
-                player.close_player()
+                player.stop()
                 break
-            sys.exit(0)
         if suburl:
-            subtext = get_sub(subtitle, pos)
+            subtext = get_sub(subtitle, player.current_duration / 1000.0)
             subtext += " " * (w - len(subtext))
 
 
@@ -219,10 +192,10 @@ def main():
         curses.curs_set(0)
         try:
             if index == 1:
-                results = search_pl(query)
+                results = youtube.search_pl(query)
                 isPlaylist = True
             else:
-                results = search_video(query)
+                results = youtube.search_video(query)
                 isPlaylist = False
         except Exception as e:
             logger.error(e)
@@ -265,7 +238,7 @@ def main():
     if index == 0:
         try:
             if isPlaylist:
-                for video in extract_playlist_data(choice['url']):
+                for video in youtube.extract_playlist_data(choice['url']):
                     scr.reset()
                     play_audio_tui(scr, video['url'], video['title'])
             else:
@@ -283,12 +256,12 @@ def main():
     else:
         curses.endwin()
         if isPlaylist:
-            for video in extract_playlist_data(choice['url']):
+            for video in youtube.extract_playlist_data(choice['url']):
                 print(f"Downloading {video['title']}")
-                download_video(video['url'], print_hook)
+                youtube.download_video(video['url'], youtube.print_hook)
         else:
             print(f"Downloading {choice['title']}")
-            download_video(choice['url'], print_hook)
+            youtube.download_video(choice['url'], youtube.print_hook)
 
     sleep(2)
     scr.quit()
