@@ -191,7 +191,7 @@ def play_audio(url, title=None):
             stdscr.hline(4, 1, curses.ACS_HLINE, int(curses.COLS))
             # TODO: Move this into a separate curses page
             stdscr.addstr(5, 1, "CONTROLS: ")
-            stdscr.addstr(6, 1, "s       : STOP (Start next song in playlist)")
+            stdscr.addstr(6, 1, "s       : STOP / NEXT")
             stdscr.addstr(7, 1, "SPACE   : Toggle PLAY/PAUSE")
             stdscr.addstr(8, 1, "→       : Seek 10 seconds forward")
             stdscr.addstr(9, 1, "←       : Seek 10 seconds backward")
@@ -203,8 +203,8 @@ def play_audio(url, title=None):
             stdscr.hline(15, 1, curses.ACS_HLINE, int(curses.COLS))
             stdscr.addstr(16, 1, "Subtitles")
             if suburl:
-                stdscr.hline(14, 1, curses.ACS_HLINE, int(curses.COLS))
-                stdscr.addstr(17, 5, subtext)
+                stdscr.hline(17, 1, curses.ACS_HLINE, int(curses.COLS))
+                stdscr.addstr(20, 5, subtext)
             control = stdscr.getch()
 
             if control == ord("s"):

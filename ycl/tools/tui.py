@@ -93,20 +93,20 @@ def play_audio_tui(screen, url, title=None):
         stdscr.hline(4, 2, curses.ACS_HLINE, curses.COLS - 4)
         # TODO: Move this into a separate curses page
         stdscr.addstr(6, 2, "CONTROLS : ", curses.color_pair(3) | curses.A_BOLD)
-        stdscr.addstr(7, 2, "s             : STOP (Start next song in playlist) ", curses.color_pair(3))
+        stdscr.addstr(7, 2, "s             : STOP / NEXT ", curses.color_pair(3))
         stdscr.addstr(8, 2, "SPACE         : Toggle PLAY/PAUSE ", curses.color_pair(3))
         stdscr.addstr(9, 2, "→             : Seek 10 seconds forward ", curses.color_pair(3))
         stdscr.addstr(10, 2, "←             : Seek 10 seconds backward ", curses.color_pair(3))
         stdscr.addstr(11, 2, "↑             : Increase Volume", curses.color_pair(3))
         stdscr.addstr(12, 2, "↓             : Decrease Volume", curses.color_pair(3))
-        stdscr.addstr(12, 1, "L             : Toggle Repeat")
-        stdscr.addstr(13, 1, "M             : Toggle Mute")
+        stdscr.addstr(12, 1, "L             : Toggle Repeat", curses.color_pair(3))
+        stdscr.addstr(13, 1, "M             : Toggle Mute", curses.color_pair(3))
         stdscr.addstr(14, 2, "q             : Quit ", curses.color_pair(3))
         stdscr.hline(15, 2, curses.ACS_HLINE, curses.COLS - 4)
         stdscr.addstr(16, 2, "Subtitles")
         if suburl:
-            stdscr.hline(15, 2, curses.ACS_HLINE, curses.COLS - 4)
-            stdscr.addstr(18, 2, subtext, curses.color_pair(4))
+            stdscr.hline(17, 2, curses.ACS_HLINE, curses.COLS - 4)
+            stdscr.addstr(20, 2, subtext, curses.color_pair(4))
 
         control = stdscr.getch()
 
@@ -116,7 +116,6 @@ def play_audio_tui(screen, url, title=None):
             sleep(0.5)
             player.stop()
             break
-
         elif control == ord(" "):
             player.toggle_pause()
         elif control == curses.KEY_RIGHT:
