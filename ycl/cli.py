@@ -126,7 +126,7 @@ def cli(query=None, playlistsearch=False, video=None, playlist=None, interactive
 
 def main():
     arg_parser = ArgumentParser(description="YCL - Youtube Command Line")
-    arg_parser.add_argument('query', nargs='?', help="Search query")
+    arg_parser.add_argument('query', nargs='*', type=str, help="Search query")
     arg_parser.add_argument("--playlistsearch", "-ps", action='store_true', default=False, help="Searches for playlists")
     arg_parser.add_argument("--video", "-v", action='store_true', default=False, help="Use a direct video link")
     arg_parser.add_argument("--playlist", "-pl", action='store_true', default=False, help="Use a direct playlist link or file")
