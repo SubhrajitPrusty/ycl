@@ -1,6 +1,8 @@
 # ycl
 Simple application to search, play, download Youtube videos from the terminal
 
+![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/subhrajitprusty/ycl/Tests/master?label=Tests&style=for-the-badge&logo=pytest)
+
 ## Requirements
 
 * Python 3.6+
