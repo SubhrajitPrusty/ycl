@@ -1,6 +1,7 @@
-from setuptools import setup, find_packages
 from codecs import open
 from os import path
+
+from setuptools import find_packages, setup
 
 here = path.abspath(path.dirname(__file__))
 
@@ -15,7 +16,7 @@ def readme():
 
 setup(
     name='ycl',
-    version='1.0',
+    version='1.1.0',
     description='youtube control via command line',
     long_description=readme(),
     long_description_content_type='text/markdown',
@@ -35,17 +36,18 @@ setup(
     ],
     license='MIT',
     packages=find_packages(),
+    include_package_data=True,
     install_requires=[
-            'python-dotenv',
-            'requests',
-            'youtube-dl',
-            'pick',
-            'Click',
-            'ffpyplayer',
-            'loguru',
-            'windows-curses; platform_system == "Windows"'],
-    entry_points="""
-    [console_scripts]
-        ycl=ycl:cli
-        """,
+        'python-dotenv',
+        'requests',
+        'youtube-dl',
+        'loguru',
+        'windows-curses; platform_system == "Windows"',
+        'python-vlc'
+    ],
+    entry_points={
+        'console_scripts': [
+            'ycl = ycl.cli:main'
+        ]
+    },
 )

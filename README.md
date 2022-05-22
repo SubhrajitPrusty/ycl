@@ -4,14 +4,14 @@ Simple application to search, play, download Youtube videos from the terminal
 ## Requirements
 
 * Python 3.6+
-* [FFMPEG](https://ffmpeg.org/)
+* [VLC](https://www.videolan.org/vlc/)
 * [Youtube Data API v3 Key](https://www.slickremix.com/docs/get-api-key-for-youtube/)
   > Due to Google limiting quota on Youtube API, you should get your own key.
 
 ## Install
 
 ```
-pip3 install -e .
+pip install -e .
 ```
 
 Set your Youtube API Key:
@@ -30,8 +30,6 @@ setx YOUTUBE_KEY "AIzaSyAZQ2vf2Y5wfDxj**************"
 ```
 > Note the environment variable will be available for the subsequent command prompts/terminals.
 
-> To properly setup ffpyplayer on Windows, follow instructions [here](http://matham.github.io/ffpyplayer/installation.html)
-
 
 ## Usage
 
@@ -49,7 +47,7 @@ Options:
 ```
 
 
-## Docker
+## Docker (Deprecated)
 
 > Linux only
 

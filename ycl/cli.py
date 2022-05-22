@@ -1,64 +1,51 @@
+"""CLI entrypoint
+"""
+
+import curses
 import os
 import sys
-import click
-import curses
-from tools import tui
-from pick import Picker
+from argparse import ArgumentParser
+
 from loguru import logger
-from tools.player import (
-    download_video,
-    play_audio)
-from tools.youtube import (
-    is_connected,
-    isValidURL,
-    parse_file,
-    extract_playlist_data,
-    search_pl,
-    search_video,
-    print_hook)
+
+from ycl.tools import tui
+from ycl.tools.pick import Picker
+from ycl.tools.player import play_audio
+from ycl.tools.youtube import (download_video, extract_playlist_data,
+                               is_connected, isValidURL, parse_file,
+                               print_hook, search_pl, search_video)
+
+logger.remove(0)
+logger.add(sys.stderr, level='WARNING')
 
 
-def quit_pick(picker):
+def _quit_pick(picker):
     sys.exit(0)
 
 
-@logger.catch
-@click.command()
-@click.argument("query", nargs=-1)
-@click.option("--playlistsearch", "-ps", default=False,
-              is_flag=True, help="Searches for playlists")
-@click.option("--video", "-v", default=False,
-              is_flag=True, help="Use a direct video link")
-@click.option("--playlist", "-pl", default=False, is_flag=True,
-              help="Use a direct playlist link or file")
-@click.option("--interactive", "-i", default=False, is_flag=True,
-              help="Starts an interactive Terminal UI session")
-@click.option("--export", "-e", default=False, is_flag=True,
-              help="Export A playlist to a local file")
-@click.option("--output", "-o", default="mkv", is_flag=False,
-              help="Set output format container, eg: mp4, mkv")
-def cli(query, playlistsearch, video, playlist, interactive, export, output):
+def cli(query=None, playlistsearch=False, video=None, playlist=None, interactive=False, export=False, output=None):
+    """CLI logic handler
+    """
     LOCAL_PLAYLIST = False
 
     if not is_connected():
-        click.secho("Check your internet connection.", fg="red", bg="yellow")
+        print("Check your internet connection.")
         sys.exit(1)
 
     if interactive:
         tui.main()
     else:
         if not query:
-            print("Error: Enter a search query")
+            _msg = "Error: Enter a search query"
+            print(_msg)
             sys.exit(1)
 
         query = " ".join(query)
-
-        choice = dict()
+        choice = {}
 
         if video:
             isValid, details = isValidURL(query, urlType="video")
             if isValid:
-                # print(f"Selected : {url}")
                 choice['id'] = details['id']
                 choice['url'] = query
                 choice['title'] = details['snippet']['title']
@@ -68,7 +55,6 @@ def cli(query, playlistsearch, video, playlist, interactive, export, output):
         elif playlist:
             isValid, details = isValidURL(query, urlType="playlist")
             if isValid:
-                # print(f"Selected : {url}")
                 choice['id'] = details['id']
                 choice['url'] = query
                 choice['title'] = details['snippet']['title']
@@ -81,7 +67,6 @@ def cli(query, playlistsearch, video, playlist, interactive, export, output):
         elif export:
             isValid, details = isValidURL(query, urlType="playlist")
             if isValid:
-                # print(f"Selected : {url}")
                 video_list = '\n'.join(
                     [f"{play_list['url']},{play_list['title']}"
                         for play_list in extract_playlist_data(query)])
@@ -101,13 +86,13 @@ def cli(query, playlistsearch, video, playlist, interactive, export, output):
                 results = search_video(query)
 
             if len(results) < 1:
-                click.secho("No results found.", fg="red")
+                print("No results found.")
                 sys.exit(3)
 
             options = [x["title"] for x in results]
             title = f"Search results for {query} (q to quit)"
             picker = Picker(options, title)
-            picker.register_custom_handler(ord('q'), quit_pick)
+            picker.register_custom_handler(ord('q'), _quit_pick)
             option, index = picker.start()
 
             choice = results[index]
@@ -119,10 +104,10 @@ def cli(query, playlistsearch, video, playlist, interactive, export, output):
         title = "Choose what you want to do (q to quit)"
         picker = Picker(options, title)
 
-        picker.register_custom_handler(ord('q'), quit_pick)
+        picker.register_custom_handler(ord('q'), _quit_pick)
 
+        curses.initscr().clear()
         option, index = picker.start()
-        # curses.initscr()
         curses.endwin()
         if playlist or playlistsearch:
 
@@ -135,7 +120,6 @@ def cli(query, playlistsearch, video, playlist, interactive, export, output):
                 if option == "Download":
                     print(f"\x1B[1KDownload: {video['title']}\n")
                     download_video(video['url'], print_hook, output_format=output)
-                    # print()
                 elif option == "Play":
                     play_audio(video['url'], video['title'])
         else:
@@ -146,5 +130,22 @@ def cli(query, playlistsearch, video, playlist, interactive, export, output):
                 play_audio(choice['url'], choice['title'])
 
 
-if __name__ == '__main__':
-    cli()
+def main():
+    """Argparse handler
+    """
+    arg_parser = ArgumentParser(description="YCL - Youtube Command Line")
+    arg_parser.add_argument('query', nargs='*', type=str, help="Search query")
+    arg_parser.add_argument("--playlistsearch", "-ps", action='store_true', default=False, help="Searches for playlists")
+    arg_parser.add_argument("--video", "-v", action='store_true', default=False, help="Use a direct video link")
+    arg_parser.add_argument("--playlist", "-pl", action='store_true', default=False, help="Use a direct playlist link or file")
+    arg_parser.add_argument("--interactive", "-i", action='store_true', default=False, help="Starts an interactive Terminal UI session")
+    arg_parser.add_argument("--export", "-e", action='store_true', default=False, help="Export A playlist to a local file")
+    arg_parser.add_argument("--output", "-o", action='store_true', default="mkv", help="Set output format container, eg: mp4, mkv")
+
+    args = arg_parser.parse_args()
+    logger.debug(args.query)
+    cli(args.query, args.playlistsearch, args.video, args.playlist, args.interactive, args.export, args.output)
+
+
+if __name__ == "__main__":
+    main()

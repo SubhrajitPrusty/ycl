@@ -1,23 +1,27 @@
-import re
+"""Youtube API and youtube-dl helper functions
+"""
 import os
-import sys
-import socket
 import pickle
+import re
+import socket
+import sys
+from urllib.parse import parse_qs, urlparse
+
 import requests
 import youtube_dl
-from loguru import logger
 from dotenv import load_dotenv
-from urllib.parse import urlparse, parse_qs
+from loguru import logger
 
 load_dotenv()
 
 KEY = os.environ.get("YOUTUBE_KEY")
 BASE_URL = "https://youtube.googleapis.com/youtube/v3"
-
-PAYLOAD = dict()
+PAYLOAD = {}
 
 
 def is_connected():
+    """Check if connected to internet
+    """
     SERVER = "one.one.one.one"
     try:
         host = socket.gethostbyname(SERVER)
@@ -30,15 +34,13 @@ def is_connected():
 
 
 def isValidURL(url, urlType="video"):
-    """
-    Parameters:
-            url : url as string
-            urlType : video/playlist
+    """Check if valid Youube URL
+    :param url: url as string
+    :param urlType: video/playlist
 
-    Returns:
-            if valid : True, details - a dict with relevant details
-            else : False, None
-
+    :return:
+        if valid: True, details - a dict with relevant details
+        else: False, None
     """
     PAYLOAD['key'] = KEY
     PAYLOAD["part"] = "snippet"
@@ -82,17 +84,10 @@ def isValidURL(url, urlType="video"):
 
 
 def search_video(query):
-    """
-    Parameters:
-            query : query string
+    """Search for the video using Youtube API
 
-    Returns:
-            results : list of dictionaries
-            {
-                    "url" : "",
-                    "id" : "",
-                    "title": "",
-            }
+    :param query: query string
+    :returns: results : list of videos
     """
 
     PAYLOAD['key'] = KEY
@@ -112,7 +107,7 @@ def search_video(query):
             if videoId.get("kind") == "youtube#video":
                 results.append(
                     {
-                        "url": f"https://youtube.com/watch?v={videoId.get('videoId')}",  # noqa : E501
+                        "url": f"https://youtube.com/watch?v={videoId.get('videoId')}",
                         "id": videoId.get("videoId"),
                         "title": x["snippet"]["title"],
                     })
@@ -127,6 +122,11 @@ def search_video(query):
 
 
 def search_pl(query):
+    """Search for the playlist using Youtube API
+
+    :param query: query string
+    :returns: A list of playlist details
+    """
     PAYLOAD['key'] = KEY
 
     PAYLOAD['part'] = "snippet"
@@ -145,7 +145,7 @@ def search_pl(query):
             if playlistId.get("kind") == "youtube#playlist":
                 results.append(
                     {
-                        "url": f"https://youtube.com/playlist?list={playlistId.get('playlistId')}",  # noqa : E501
+                        "url": f"https://youtube.com/playlist?list={playlistId.get('playlistId')}",
                         "id": playlistId.get("playlistId"),
                         "title": x["snippet"]["title"],
                     })
@@ -160,17 +160,22 @@ def search_pl(query):
 
 
 def extract_playlist_data(url):
-    PAYLOAD = dict()
-    PAYLOAD['key'] = KEY
-    PAYLOAD["maxResults"] = 50
+    """Extract playlist data from url
+
+    :param url: url as string
+    :returns: Yields a dictionary with playlist details
+    """
+    PL_PAYLOAD = {}
+    PL_PAYLOAD['key'] = KEY
+    PL_PAYLOAD["maxResults"] = 50
     parsed = urlparse(url)
     qss = parse_qs(parsed.query)
 
-    PAYLOAD['part'] = "snippet"
-    PAYLOAD['playlistId'] = qss['list'].pop()
-    PAYLOAD['pageToken'] = ""
+    PL_PAYLOAD['part'] = "snippet"
+    PL_PAYLOAD['playlistId'] = qss['list'].pop()
+    PL_PAYLOAD['pageToken'] = ""
 
-    r = requests.get(BASE_URL + "/playlistItems", params=PAYLOAD)
+    r = requests.get(BASE_URL + "/playlistItems", params=PL_PAYLOAD)
 
     items = r.json().get('items')
 
@@ -184,8 +189,8 @@ def extract_playlist_data(url):
         if items:
             totalItems += items
             while nextPageToken is not None:
-                PAYLOAD['pageToken'] = nextPageToken
-                r = requests.get(BASE_URL + "/playlistItems", params=PAYLOAD)
+                PL_PAYLOAD['pageToken'] = nextPageToken
+                r = requests.get(BASE_URL + "/playlistItems", params=PL_PAYLOAD)
                 items = r.json().get('items')
                 totalItems += items
                 nextPageToken = r.json().get('nextPageToken')
@@ -206,7 +211,9 @@ def extract_playlist_data(url):
         print(f"Exception {e}")
 
 
-class MyLogger(object):
+class MyLogger():
+    """Logger class for youtube-dl output handling
+    """
     def debug(self, msg):
         pass
 
@@ -218,9 +225,13 @@ class MyLogger(object):
 
 
 def print_hook(d):
+    """Hook for printing download progress data onto stdout
+
+    :param d: dict with progress data from youtube-dl
+    """
     filename = ".".join(d['filename'].split(".")[:-2])
     if d['status'] == 'finished':
-        print("\x1B[FDownloaded {}".format(filename))
+        print(f"\x1B[FDownloaded {filename}")
     elif d['status'] == 'downloading':
         try:
             percent_str = d.get('_percent_str')
@@ -233,8 +244,13 @@ def print_hook(d):
 
 
 def return_hook(d):
+    """Hook for returning download progress data
+    Which will be displayed in the TUI
+
+    :param d: dict with progress data from youtube-dl
+    """
     if d['status'] == 'finished':
-        msg = "Downloaded {}".format(d['filename'])
+        msg = f"Downloaded {d['filename']}"
     else:
         try:
             percent_str = d.get('_percent_str')
@@ -258,18 +274,27 @@ def return_hook(d):
 
 
 def speed_conv(b):
+    """Convert bytes into KB/MB
+
+    :param b: bytes
+    """
     if b > 10**6:
-        return f"{round(b/10**6,2)} MB".rjust(10)
+        return f"{round(b/10**6, 2)} MB".rjust(10)
     elif b > 10**3:
-        return f"{round(b/10**3,2)} KB".rjust(10)
+        return f"{round(b/10**3, 2)} KB".rjust(10)
     else:
         return f"{b} B".rjust(10)
 
 
 def download_video(url, hook, output_format="mkv"):
+    """Download the video
 
+    :param url: url of the video
+    :param hook: hook function
+    :param output_format: output format. Default is mkv
+    """
     msg = f"Downloading {url}"
-    if hook == return_hook:
+    if hook is return_hook:
         with open("/tmp/msg.pkl", "wb+") as fp:
             pickle.dump(msg, fp)
 
@@ -295,6 +320,10 @@ def download_video(url, hook, output_format="mkv"):
 
 
 def extract_video_url(yt_url):
+    """Extract the playable url from the youtube url
+
+    :param yt_url: youtube url
+    """
     YDL_OPTS = {
         "ignore-errors": True,
         "format": "best",
@@ -312,6 +341,10 @@ def extract_video_url(yt_url):
 
 
 def extract_audio_url(yt_url):
+    """Extract the playable url from the youtube url
+
+    :param yt_url: youtube url
+    """
     YDL_OPTS = {
         "ignore-errors": True,
         "format": "bestaudio[acodec=opus]",
@@ -332,6 +365,10 @@ def extract_audio_url(yt_url):
 
 @logger.catch
 def extract_video_sublink(yt_url):
+    """Extract the link for subtitles from the youtube url
+
+    :param yt_url: youtube url
+    """
     YDL_OPTS = {
         "ignore-errors": True,
         'logger': MyLogger(),
@@ -345,19 +382,22 @@ def extract_video_sublink(yt_url):
                         sub_url = subtitle.get('url')
                         _ = subtitle.get('ext')
                         return sub_url
-            else:
-                return None
     except Exception as e:
         logger.error(e)
-        return None
+
+    return None
 
 
 def parse_file(filename):
+    """Parse the playlist file
+
+    :param filename: playlist file
+    """
     playlist = []
     with open(filename, encoding='utf8') as f:
         for line in f.readlines():
             # check if link or not
-            url, title = parse_line(line)
+            url, _ = parse_line(line)
             # logger.debug(f"{line}: {valid}")
             valid, details = isValidURL(url)
             # logger.debug(f"valid={valid} | url={url} | title={title}")
@@ -376,6 +416,10 @@ def parse_file(filename):
 
 
 def parse_line(line):
+    """Parse the line and check if it is a url or not
+
+    :param line: line to parse
+    """
     split_line = line.split(',')
     regex = re.compile('^http[s]?://.*')
     if len(split_line) == 1:
