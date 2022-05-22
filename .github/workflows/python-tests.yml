@@ -10,7 +10,7 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -33,4 +33,4 @@ jobs:
         flake8 --statistics
     - name: Test with pytest
       run: |
-        pytest ycl
+        pytest ycl/tests.py
