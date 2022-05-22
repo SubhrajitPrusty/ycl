@@ -32,5 +32,7 @@ jobs:
       run: |
         flake8 --statistics
     - name: Test with pytest
+      env:
+        YOUTUBE_KEY: ${{ secrets.YOUTUBE_KEY }}
       run: |
         pytest ycl/tests.py
