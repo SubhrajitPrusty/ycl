@@ -40,7 +40,7 @@ setup(
     install_requires=[
         'python-dotenv',
         'requests',
-        'youtube-dl',
+        'yt-dlp',
         'loguru',
         'windows-curses; platform_system == "Windows"',
         'python-vlc'

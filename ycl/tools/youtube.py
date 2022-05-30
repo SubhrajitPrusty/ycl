@@ -8,9 +8,9 @@ import sys
 from urllib.parse import parse_qs, urlparse
 
 import requests
-import youtube_dl
 from dotenv import load_dotenv
 from loguru import logger
+from yt_dlp import YoutubeDL
 
 load_dotenv()
 
@@ -309,7 +309,7 @@ def download_video(url, hook, output_format="mkv"):
     }
 
     try:
-        with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
+        with YoutubeDL(YDL_OPTS) as ydl:
             ydl.download([url])
         # print()
     except Exception as e:
@@ -330,7 +330,7 @@ def extract_video_url(yt_url):
         'logger': MyLogger(),
     }
     try:
-        with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
+        with YoutubeDL(YDL_OPTS) as ydl:
             info = ydl.extract_info(yt_url, download=False)
             audio_url = info['formats'][-1]['url']
             acodec = info['formats'][-1]['acodec']
@@ -352,7 +352,7 @@ def extract_audio_url(yt_url):
     }
 
     try:
-        with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
+        with YoutubeDL(YDL_OPTS) as ydl:
             info = ydl.extract_info(yt_url, download=False)
 
             audio_url = info['formats'][0]['url']
@@ -375,7 +375,7 @@ def extract_video_sublink(yt_url):
         "writeautomaticsub": True,
     }
     try:
-        with youtube_dl.YoutubeDL(YDL_OPTS) as ydl:
+        with YoutubeDL(YDL_OPTS) as ydl:
             if (info := ydl.extract_info(yt_url, download=False)) is not None:
                 if (req_subs := info.get('requested_subtitles')) is not None:
                     if (subtitle := req_subs.get('en')) is not None:
